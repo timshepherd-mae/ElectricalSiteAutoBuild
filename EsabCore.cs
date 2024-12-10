@@ -22,18 +22,54 @@ namespace ElectricalSiteAutoBuild
 
     public class EsabFeature
     {
-        EsabFeatureType featureType;
+        public ObjectId id;
+        public ObjectId parentId;
+        public int parentVertex;
+        public EsabFeatureType featureType;
+
+        // constructors
+        //
+
+        #region transformers
+        // xdict to class transformers
+
+        public void ToXdictionary(DBObject dbo)
+        {
+            TypedValue[] xdata = new TypedValue[4];
+
+            xdata[0] = new TypedValue((int)DxfCode.SoftPointerId, id);
+            xdata[1] = new TypedValue((int)DxfCode.SoftPointerId, parentId);
+            xdata[2] = new TypedValue((int)DxfCode.Int32, parentVertex);
+            xdata[3] = new TypedValue((int)DxfCode.Int32, featureType);
+
+            dbo.SetXDictionaryXrecordData(Constants.XappName, xdata);
+        }
+
+        public void FromXdictionary(DBObject dbo)
+        {
+            ResultBuffer rb = dbo.GetXDictionaryXrecordData(Constants.XappName);
+
+            if (rb != null)
+            {
+                var data = rb.AsArray();
+                id = (ObjectId)data[0].Value;
+                parentId = (ObjectId)data[1].Value;
+                parentVertex = (int)data[2].Value;
+                featureType = (EsabFeatureType)Enum.ToObject(typeof(EsabFeatureType), data[3].Value);
+
+            }
+        }
+        #endregion transformers
 
     }
 
     public class EsabRoute
     {
         public ObjectId id;
-        public EsabRating rating = EsabRating.kv400;
-        public EsabConnectorType endType1 = EsabConnectorType.SGT;
-        public EsabConnectorType endType2 = EsabConnectorType.CSE;
-
-        public int phaseCount = 3;
+        public EsabRating rating;
+        public EsabConnectorType endType1;
+        public EsabConnectorType endType2;
+        public EsabPhase phase;
         public ObjectIdCollection featureIds = new ObjectIdCollection();
 
         // constructors
@@ -44,22 +80,19 @@ namespace ElectricalSiteAutoBuild
 
         public void ToXdictionary(DBObject dbo)
         {
-            int tvCount = featureIds.Count + 7;
+            int tvCount = featureIds.Count + 5;
             TypedValue[] xdata = new TypedValue[tvCount];
 
             xdata[0] = new TypedValue((int)DxfCode.SoftPointerId, id);
             xdata[1] = new TypedValue((int)DxfCode.Int32, rating);
-            xdata[2] = new TypedValue((int)DxfCode.Int32, phaseCount);
+            xdata[2] = new TypedValue((int)DxfCode.Int32, phase);
             xdata[3] = new TypedValue((int)DxfCode.Int32, endType1);
             xdata[4] = new TypedValue((int)DxfCode.Int32, endType2);
-            xdata[5] = new TypedValue((int)DxfCode.ExtendedDataControlString, "{");
             
             for (int i = 0; i < featureIds.Count; i++)
             {
-                xdata[i + 6] = new TypedValue((int)DxfCode.SoftPointerId, id);
+                xdata[i + 5] = new TypedValue((int)DxfCode.SoftPointerId, id);
             }
-
-            xdata[tvCount - 1] = new TypedValue((int)DxfCode.ExtendedDataControlString, "}");
 
             dbo.SetXDictionaryXrecordData(Constants.XappName, xdata);
         }
@@ -74,17 +107,12 @@ namespace ElectricalSiteAutoBuild
                 var data = rb.AsArray();
                 id = (ObjectId)data[0].Value;
                 rating = (EsabRating)Enum.ToObject(typeof(EsabRating), data[1].Value);
-                phaseCount = (int)data[2].Value;
-                endType1 = (EsabConnectorType)data[3].Value;
-                endType2 = (EsabConnectorType)data[4].Value;
-                if ((string)data[5].Value != "{")
+                phase = (EsabPhase)Enum.ToObject(typeof(EsabPhase), data[2].Value);
+                endType1 = (EsabConnectorType)Enum.ToObject(typeof(EsabConnectorType), data[3].Value);
+                endType2 = (EsabConnectorType)Enum.ToObject(typeof(EsabConnectorType), data[4].Value);
+                for (int i = 5; i < data.Length; i++)
                 {
-                    int i = 6;
-                    while ((string)data[i++].Value != "}")
-                    {
                         featureIds.Add((ObjectId)data[i].Value);
-                    }
-
                 }
 
             }
@@ -115,6 +143,11 @@ namespace ElectricalSiteAutoBuild
     public enum EsabConnectorType
     {
         SGT, CSE, GIS, OHC, Junction, Null
+    }
+
+    public enum EsabPhase
+    {
+        Single, ThreePhase
     }
 
     #endregion Enumerators
