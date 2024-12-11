@@ -77,41 +77,24 @@ namespace ElectricalSiteAutoBuild
 
         }
 
-        public void QuickAdd(Entity ent)
+        public void RedDiamond(Point2d pnt, double sz)
         {
-            Document acDoc = Application.DocumentManager.MdiActiveDocument;
-            Database acDb = acDoc.Database;
-
-            using (Transaction tr = acDb.TransactionManager.StartTransaction())
+            using (ResultBuffer vb = new ResultBuffer())
             {
-                // get block table record
-                BlockTableRecord btr = (BlockTableRecord)tr.GetObject(acDb.CurrentSpaceId, OpenMode.ForWrite);
-                btr.AppendEntity(ent);
-                tr.AddNewlyCreatedDBObject(ent, true);
-                tr.Commit();
+                vb.Add(new TypedValue(5003, 1));
+                vb.Add(new TypedValue(5002, new Point2d(pnt.X , pnt.Y + sz)));
+                vb.Add(new TypedValue(5002, new Point2d(pnt.X + sz, pnt.Y )));
+                vb.Add(new TypedValue(5002, new Point2d(pnt.X + sz, pnt.Y )));
+                vb.Add(new TypedValue(5002, new Point2d(pnt.X , pnt.Y - sz)));
+                vb.Add(new TypedValue(5002, new Point2d(pnt.X , pnt.Y - sz)));
+                vb.Add(new TypedValue(5002, new Point2d(pnt.X - sz, pnt.Y )));
+                vb.Add(new TypedValue(5002, new Point2d(pnt.X - sz, pnt.Y )));
+                vb.Add(new TypedValue(5002, new Point2d(pnt.X , pnt.Y + sz)));
+
+                Application.DocumentManager.MdiActiveDocument.Editor.DrawVectors(vb, Matrix3d.Identity);
             }
-            acDoc.Editor.Regen();
+
         }
-
-        public void QuickRemove(Entity ent)
-        {
-            Document acDoc = Application.DocumentManager.MdiActiveDocument;
-            Database acDb = acDoc.Database;
-
-            using (Transaction tr = acDb.TransactionManager.StartTransaction())
-            {
-                // get block table record
-                BlockTableRecord btr = (BlockTableRecord)tr.GetObject(acDb.CurrentSpaceId, OpenMode.ForWrite);
-                //btr.AppendEntity(ent);
-                //tr.AddNewlyCreatedDBObject(ent, true);
-
-                ent.Erase();
-                tr.Commit();
-            }
-            acDoc.Editor.Regen();
-        }
-
-
 
 
     }

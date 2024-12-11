@@ -245,20 +245,12 @@ namespace ElectricalSiteAutoBuild
             using (Transaction tr = acDoc.TransactionManager.StartTransaction())
             {
                 pline = (Polyline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
-                pline.Highlight();
-                acEd.UpdateScreen();
+                rb = pline.GetXDictionaryXrecordData(Constants.XappName);
                 ext = pline.GeometricExtents;
                 tr.Commit();
             }
 
             acEd.SetCurrentView(ed.ZoomEntity(acEd, ext, 1.4));
-
-            using (Transaction tr = acDoc.TransactionManager.StartTransaction())
-            {
-                pline = (Polyline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
-                rb = pline.GetXDictionaryXrecordData(Constants.XappName);
-                tr.Commit();
-            }
 
             if (rb != null)
             {
@@ -271,31 +263,20 @@ namespace ElectricalSiteAutoBuild
                     // focus on current vertex
                     //
                     Point2d vPnt = pline.GetPoint2dAt(i);
-
-                    // temp marker on current vertex
-                    //
-                    Circle temp = new Circle(new Point3d(vPnt.X, vPnt.Y, 0), Vector3d.ZAxis, 0.2);
-                    ed.QuickAdd(temp);
+                    ed.RedDiamond(vPnt, 0.2);
 
                     Application.ShowAlertDialog("next");
+                    acEd.Regen();
 
-                    ed.QuickRemove(temp);
-
-                    //temp.Dispose();
                 }
 
             }
             else
             {
                 acEd.WriteMessage("\nPolyline does not contain any ElectricalSiteAutoBuild data");
-                acEd.WriteMessage("\nExiting Command");
-                pline.Unhighlight();
-                acEd.UpdateScreen();
+                acEd.WriteMessage("\nExiting Command\n");
                 return;
             }
-
-            pline.Unhighlight();
-            acEd.UpdateScreen();
 
         }
 

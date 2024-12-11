@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("SubStationAutoBuild")]
+[assembly: AssemblyTitle("ElectricalSiteAutoBuild")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("The Murphy Group")]
-[assembly: AssemblyProduct("SubStationAutoBuild")]
+[assembly: AssemblyProduct("ElectricalSiteAutoBuild")]
 [assembly: AssemblyCopyright("Copyright © The Murphy Group 2024")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

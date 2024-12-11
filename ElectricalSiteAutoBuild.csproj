@@ -7,8 +7,8 @@
     <ProjectGuid>{E65C8B4E-9BF5-46B8-A578-07E63746C66D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SubStationAutoBuild</RootNamespace>
-    <AssemblyName>SubStationAutoBuild</AssemblyName>
+    <RootNamespace>ElectricalSiteAutoBuild</RootNamespace>
+    <AssemblyName>ElectricalSiteAutoBuild</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
