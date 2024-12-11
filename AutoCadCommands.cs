@@ -15,25 +15,6 @@ namespace ElectricalSiteAutoBuild
 
         #region TestCommands
 
-        [CommandMethod("kwdtest")]
-        public void Kwdtest()
-        {
-            Document acDoc = Application.DocumentManager.MdiActiveDocument;
-            Editor ed = acDoc.Editor;
-
-            PromptPointOptions ppo = new PromptPointOptions("Pick a point: ");
-            ppo.Keywords.Add("teSt");
-            ppo.Keywords.Add("Tree");
-            ppo.Keywords.Add("fEnce");
-
-            ppo.AppendKeywordsToMessage = true;
-
-            PromptPointResult res = ed.GetPoint(ppo);
-            ed.WriteMessage(res.Status.ToString() + "\n");
-            ed.WriteMessage(res.StringResult + "\n");
-
-        }
-
         [CommandMethod("route2xd")]
         public void Route2xd()
         {
@@ -57,8 +38,8 @@ namespace ElectricalSiteAutoBuild
                     id = pline.ObjectId,
                     rating = EsabRating.kv400,
                     phase = PhaseType.ThreePhase,
-                    endType1 = EsabConnectorType.CSE,
-                    endType2 = EsabConnectorType.SGT,
+                    endType1 = EsabTerminatorType.CSE,
+                    endType2 = EsabTerminatorType.SGT,
                     featureIds = new ObjectIdCollection()
                 };
                 route.featureIds.Add(pline.ObjectId);
@@ -92,10 +73,12 @@ namespace ElectricalSiteAutoBuild
                 route.FromXdictionary(pline);
 
                 acEd.WriteMessage("\n" + route.id.ToString());
+                acEd.WriteMessage("\n" + Enum.GetName(typeof(xdType), route.type));
                 acEd.WriteMessage("\n" + Enum.GetName(typeof(EsabRating), route.rating));
                 acEd.WriteMessage("\n" + Enum.GetName(typeof(PhaseType), route.phase));
-                acEd.WriteMessage("\n" + Enum.GetName(typeof(EsabConnectorType), route.endType1));
-                acEd.WriteMessage("\n" + Enum.GetName(typeof(EsabConnectorType), route.endType2));
+                acEd.WriteMessage("\n" + Enum.GetName(typeof(PhaseColour), route.phasecol));
+                acEd.WriteMessage("\n" + Enum.GetName(typeof(EsabTerminatorType), route.endType1));
+                acEd.WriteMessage("\n" + Enum.GetName(typeof(EsabTerminatorType), route.endType2));
                 foreach (ObjectId objid in route.featureIds)
                 {
                     acEd.WriteMessage("\n" + objid.ToString());
@@ -208,6 +191,13 @@ namespace ElectricalSiteAutoBuild
                 route.endType1 = ed.GetEndConnectorFromKeywords("End 1");
                 route.endType2 = ed.GetEndConnectorFromKeywords("End 2");
 
+                // one feature id per vertex
+                //
+                for (int i = 0; i < pline.NumberOfVertices; i++)
+                {
+                    route.featureIds.Add(pline.ObjectId);
+                }
+
                 route.ToXdictionary(pline);
 
                 pline.Unhighlight();
@@ -242,43 +232,71 @@ namespace ElectricalSiteAutoBuild
             Polyline pline;
             ResultBuffer rb;
             Extents3d ext;
+            bool hasFeature;
 
             using (Transaction tr = acDoc.TransactionManager.StartTransaction())
             {
                 pline = (Polyline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
                 rb = pline.GetXDictionaryXrecordData(Constants.XappName);
+                var data = rb.AsArray();
+                xdType type = (xdType)Enum.ToObject(typeof(xdType), data[1].Value);
+
+                if (type != xdType.Route)
+                {
+                    acEd.WriteMessage("\nSelection is not an ESAB Route entity\nExiting command\n");
+                    return;
+                }
+
+
                 ext = pline.GeometricExtents;
+
+                EsabRoute route = new EsabRoute();
+                route.FromXdictionary(pline);
+
+                acEd.SetCurrentView(ed.ZoomEntity(acEd, ext, 1.4));
+
+                if (rb != null)
+                {
+                    int vCount = pline.NumberOfVertices;
+
+                    // cycle through polyline vertices
+                    //
+                    for (int i = 0; i < vCount; i++)
+                    {
+                        // focus on current vertex
+                        //
+                        Point2d vPnt = pline.GetPoint2dAt(i);
+                        ed.RedDiamond(vPnt, 0.2);
+
+                        // notify feature at current vertex
+                        //
+                        hasFeature = route.featureIds[i] != route.id;
+                        acEd.WriteMessage("\n" + hasFeature.ToString());
+                    
+                        Application.ShowAlertDialog("next");
+                        acEd.Regen();
+
+                    }
+
+                }
+                else
+                {
+                    acEd.WriteMessage("\nPolyline does not contain any ElectricalSiteAutoBuild data");
+                    acEd.WriteMessage("\nExiting Command\n");
+                    return;
+                }
+
                 tr.Commit();
             }
 
-            acEd.SetCurrentView(ed.ZoomEntity(acEd, ext, 1.4));
+        }
 
-            if (rb != null)
-            {
-                int vCount = pline.NumberOfVertices;
+        [CommandMethod("EsabInspect")] 
 
-                // cycle through polyline vertices
-                //
-                for (int i = 0; i < vCount; i++)
-                {
-                    // focus on current vertex
-                    //
-                    Point2d vPnt = pline.GetPoint2dAt(i);
-                    ed.RedDiamond(vPnt, 0.2);
-
-                    Application.ShowAlertDialog("next");
-                    acEd.Regen();
-
-                }
-
-            }
-            else
-            {
-                acEd.WriteMessage("\nPolyline does not contain any ElectricalSiteAutoBuild data");
-                acEd.WriteMessage("\nExiting Command\n");
-                return;
-            }
-
+        public void EsabInspect()
+        {
+            var iWindow = new InspectionTool();
+            iWindow.Show();
         }
 
 
