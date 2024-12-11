@@ -56,7 +56,7 @@ namespace ElectricalSiteAutoBuild
                 {
                     id = pline.ObjectId,
                     rating = EsabRating.kv400,
-                    phase = EsabPhase.ThreePhase,
+                    phase = PhaseType.ThreePhase,
                     endType1 = EsabConnectorType.CSE,
                     endType2 = EsabConnectorType.SGT,
                     featureIds = new ObjectIdCollection()
@@ -93,7 +93,7 @@ namespace ElectricalSiteAutoBuild
 
                 acEd.WriteMessage("\n" + route.id.ToString());
                 acEd.WriteMessage("\n" + Enum.GetName(typeof(EsabRating), route.rating));
-                acEd.WriteMessage("\n" + Enum.GetName(typeof(EsabPhase), route.phase));
+                acEd.WriteMessage("\n" + Enum.GetName(typeof(PhaseType), route.phase));
                 acEd.WriteMessage("\n" + Enum.GetName(typeof(EsabConnectorType), route.endType1));
                 acEd.WriteMessage("\n" + Enum.GetName(typeof(EsabConnectorType), route.endType2));
                 foreach (ObjectId objid in route.featureIds)
@@ -204,6 +204,7 @@ namespace ElectricalSiteAutoBuild
                 route.id = pline.ObjectId;
                 route.rating = ed.GetRatingFromKeywords();
                 route.phase = ed.GetPhaseFromKeywords();
+                route.phasecol = ed.GetPhaseColourFromKeywords();
                 route.endType1 = ed.GetEndConnectorFromKeywords("End 1");
                 route.endType2 = ed.GetEndConnectorFromKeywords("End 2");
 

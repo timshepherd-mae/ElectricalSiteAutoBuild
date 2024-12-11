@@ -29,21 +29,35 @@ namespace ElectricalSiteAutoBuild
             return (EsabRating)Enum.Parse(typeof(EsabRating), kwd.StringResult);
         }
 
-        public EsabPhase GetPhaseFromKeywords()
+        public PhaseType GetPhaseFromKeywords()
         {
             Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
 
             PromptKeywordOptions pko = new PromptKeywordOptions("\nPhase: ");
-            foreach (string s in Enum.GetNames(typeof(EsabPhase)))
+            foreach (string s in Enum.GetNames(typeof(PhaseType)))
             {
                 pko.Keywords.Add(s);
             }
 
             PromptResult kwd = acEd.GetKeywords(pko);
             acEd.WriteMessage("\n" + kwd.StringResult + "\n");
-            return (EsabPhase)Enum.Parse(typeof(EsabPhase), kwd.StringResult);
+            return (PhaseType)Enum.Parse(typeof(PhaseType), kwd.StringResult);
         }
 
+        public PhaseColour GetPhaseColourFromKeywords()
+        {
+            Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
+
+            PromptKeywordOptions pko = new PromptKeywordOptions("\nPhase Colour: ");
+            foreach (string s in Enum.GetNames(typeof(PhaseColour)))
+            {
+                pko.Keywords.Add(s);
+            }
+
+            PromptResult kwd = acEd.GetKeywords(pko);
+            acEd.WriteMessage("\n" + kwd.StringResult + "\n");
+            return (PhaseColour)Enum.Parse(typeof(PhaseColour), kwd.StringResult);
+        }
         public EsabConnectorType GetEndConnectorFromKeywords(string prompt)
         {
             Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
@@ -79,19 +93,19 @@ namespace ElectricalSiteAutoBuild
 
         public void RedDiamond(Point2d pnt, double sz)
         {
-            using (ResultBuffer vb = new ResultBuffer())
+            using (ResultBuffer rb = new ResultBuffer())
             {
-                vb.Add(new TypedValue(5003, 1));
-                vb.Add(new TypedValue(5002, new Point2d(pnt.X , pnt.Y + sz)));
-                vb.Add(new TypedValue(5002, new Point2d(pnt.X + sz, pnt.Y )));
-                vb.Add(new TypedValue(5002, new Point2d(pnt.X + sz, pnt.Y )));
-                vb.Add(new TypedValue(5002, new Point2d(pnt.X , pnt.Y - sz)));
-                vb.Add(new TypedValue(5002, new Point2d(pnt.X , pnt.Y - sz)));
-                vb.Add(new TypedValue(5002, new Point2d(pnt.X - sz, pnt.Y )));
-                vb.Add(new TypedValue(5002, new Point2d(pnt.X - sz, pnt.Y )));
-                vb.Add(new TypedValue(5002, new Point2d(pnt.X , pnt.Y + sz)));
+                rb.Add(new TypedValue(5003, 1));
+                rb.Add(new TypedValue(5002, new Point2d(pnt.X , pnt.Y + sz)));
+                rb.Add(new TypedValue(5002, new Point2d(pnt.X + sz, pnt.Y )));
+                rb.Add(new TypedValue(5002, new Point2d(pnt.X + sz, pnt.Y )));
+                rb.Add(new TypedValue(5002, new Point2d(pnt.X , pnt.Y - sz)));
+                rb.Add(new TypedValue(5002, new Point2d(pnt.X , pnt.Y - sz)));
+                rb.Add(new TypedValue(5002, new Point2d(pnt.X - sz, pnt.Y )));
+                rb.Add(new TypedValue(5002, new Point2d(pnt.X - sz, pnt.Y )));
+                rb.Add(new TypedValue(5002, new Point2d(pnt.X , pnt.Y + sz)));
 
-                Application.DocumentManager.MdiActiveDocument.Editor.DrawVectors(vb, Matrix3d.Identity);
+                Application.DocumentManager.MdiActiveDocument.Editor.DrawVectors(rb, Matrix3d.Identity);
             }
 
         }

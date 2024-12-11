@@ -69,7 +69,8 @@ namespace ElectricalSiteAutoBuild
         public EsabRating rating;
         public EsabConnectorType endType1;
         public EsabConnectorType endType2;
-        public EsabPhase phase;
+        public PhaseType phase;
+        public PhaseColour phasecol;
         public ObjectIdCollection featureIds = new ObjectIdCollection();
 
         // constructors
@@ -80,18 +81,19 @@ namespace ElectricalSiteAutoBuild
 
         public void ToXdictionary(DBObject dbo)
         {
-            int tvCount = featureIds.Count + 5;
+            int tvCount = featureIds.Count + 6;
             TypedValue[] xdata = new TypedValue[tvCount];
 
             xdata[0] = new TypedValue((int)DxfCode.SoftPointerId, id);
             xdata[1] = new TypedValue((int)DxfCode.Int32, rating);
             xdata[2] = new TypedValue((int)DxfCode.Int32, phase);
-            xdata[3] = new TypedValue((int)DxfCode.Int32, endType1);
-            xdata[4] = new TypedValue((int)DxfCode.Int32, endType2);
+            xdata[3] = new TypedValue((int)DxfCode.Int32, phasecol);
+            xdata[4] = new TypedValue((int)DxfCode.Int32, endType1);
+            xdata[5] = new TypedValue((int)DxfCode.Int32, endType2);
             
             for (int i = 0; i < featureIds.Count; i++)
             {
-                xdata[i + 5] = new TypedValue((int)DxfCode.SoftPointerId, id);
+                xdata[i + 6] = new TypedValue((int)DxfCode.SoftPointerId, id);
             }
 
             dbo.SetXDictionaryXrecordData(Constants.XappName, xdata);
@@ -107,10 +109,11 @@ namespace ElectricalSiteAutoBuild
                 var data = rb.AsArray();
                 id = (ObjectId)data[0].Value;
                 rating = (EsabRating)Enum.ToObject(typeof(EsabRating), data[1].Value);
-                phase = (EsabPhase)Enum.ToObject(typeof(EsabPhase), data[2].Value);
-                endType1 = (EsabConnectorType)Enum.ToObject(typeof(EsabConnectorType), data[3].Value);
-                endType2 = (EsabConnectorType)Enum.ToObject(typeof(EsabConnectorType), data[4].Value);
-                for (int i = 5; i < data.Length; i++)
+                phase = (PhaseType)Enum.ToObject(typeof(PhaseType), data[2].Value);
+                phasecol = (PhaseColour)Enum.ToObject(typeof(PhaseColour), data[3].Value);
+                endType1 = (EsabConnectorType)Enum.ToObject(typeof(EsabConnectorType), data[4].Value);
+                endType2 = (EsabConnectorType)Enum.ToObject(typeof(EsabConnectorType), data[5].Value);
+                for (int i = 6; i < data.Length; i++)
                 {
                         featureIds.Add((ObjectId)data[i].Value);
                 }
@@ -123,7 +126,7 @@ namespace ElectricalSiteAutoBuild
 
     }
 
-    public class EsabConnector
+    public class EsabConductor
     {
         EsabConnectorType connectionType;
     }
@@ -144,11 +147,21 @@ namespace ElectricalSiteAutoBuild
     {
         SGT, CSE, GIS, OHC, Junction, Null
     }
-
-    public enum EsabPhase
+    public enum ConductorType
+    {
+        GIB, Busbar, Cable
+    }
+ 
+    public enum PhaseType
     {
         Single, ThreePhase
     }
+
+    public enum PhaseColour
+    {
+        Red, Yellow, Blue, RYB, BYR
+    }
+
 
     #endregion Enumerators
 }
