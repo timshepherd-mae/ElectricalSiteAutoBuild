@@ -61,6 +61,7 @@
   <ItemGroup>
     <Compile Include="AutoCadCommands.cs" />
     <Compile Include="EditorMethods.cs" />
+    <Compile Include="GeometryMethods.cs" />
     <Compile Include="InspectionTool.cs">
       <SubType>Form</SubType>
     </Compile>

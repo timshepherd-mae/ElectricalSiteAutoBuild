@@ -73,6 +73,21 @@ namespace ElectricalSiteAutoBuild
             return (EsabTerminatorType)Enum.Parse(typeof(EsabTerminatorType), kwd.StringResult);
         }
 
+        public EsabFeatureType GetFeatureFromKeywords(string prompt)
+        {
+            Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
+
+            PromptKeywordOptions pko = new PromptKeywordOptions("\n" + prompt + ": ");
+            foreach (string s in Enum.GetNames(typeof(EsabFeatureType)))
+            {
+                pko.Keywords.Add(s);
+            }
+
+            PromptResult kwd = acEd.GetKeywords(pko);
+            acEd.WriteMessage("\n" + kwd.StringResult + "\n");
+            return (EsabFeatureType)Enum.Parse(typeof(EsabFeatureType), kwd.StringResult);
+        }
+
         public ViewTableRecord ZoomEntity(Editor acEd, Extents3d ext, double zoomfactor)
         {
             ext.TransformBy(acEd.CurrentUserCoordinateSystem.Inverse());

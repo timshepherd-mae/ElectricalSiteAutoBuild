@@ -220,6 +220,7 @@ namespace ElectricalSiteAutoBuild
             Editor acEd = acDoc.Editor;
 
             EditorMethods ed = new EditorMethods();
+            GeometryMethods gm = new GeometryMethods();
 
             PromptEntityOptions peo = new PromptEntityOptions("Select LW Polyline: ");
             peo.SetRejectMessage("\nOnly LW Poly entities allowed: ");
@@ -265,15 +266,35 @@ namespace ElectricalSiteAutoBuild
                     {
                         // focus on current vertex
                         //
-                        Point2d vPnt = pline.GetPoint2dAt(i);
-                        ed.RedDiamond(vPnt, 0.2);
+                        Point2d vPnt2 = pline.GetPoint2dAt(i);
+                        Point3d vPnt3 = pline.GetPoint3dAt(i);
+                        ed.RedDiamond(vPnt2, 0.2);
 
                         // notify feature at current vertex
                         //
                         hasFeature = route.featureIds[i] != route.id;
-                        acEd.WriteMessage("\n" + hasFeature.ToString());
+                        if (hasFeature)
+                        {
+                            // vertex already has feature
+                            //
+                            acEd.WriteMessage($"\nVertex {i} has feature. \n");
+                        }
+                        else
+                        {
+                            // vertex is empty
+                            //
+                            acEd.WriteMessage($"\nSelect feature for vertex {i}: ");
+                            EsabFeatureType ft = ed.GetFeatureFromKeywords("");
+
+                            gm.EntityTransactionAdd(tr, gm.FeatureMarker(ft, 0.2, vPnt3));
+
+                            
+                        }
+                        
+                        
+                        //acEd.WriteMessage("\n" + hasFeature.ToString());
                     
-                        Application.ShowAlertDialog("next");
+                        //Application.ShowAlertDialog("next");
                         acEd.Regen();
 
                     }

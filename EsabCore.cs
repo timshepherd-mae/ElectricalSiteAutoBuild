@@ -137,6 +137,8 @@ namespace ElectricalSiteAutoBuild
         EsabTerminatorType connectionType;
     }
 
+
+
     #region Enumerators
 
     public enum EsabRating
@@ -146,7 +148,7 @@ namespace ElectricalSiteAutoBuild
 
     public enum EsabFeatureType
     {
-        PI, ESW, CVT, SA, XX
+        PI, ESW, CVT, SA, NUL
     }
 
     public enum EsabTerminatorType
@@ -173,6 +175,6 @@ namespace ElectricalSiteAutoBuild
         Route, Feature, Conductor, Connector
     } 
 
-
     #endregion Enumerators
+
 }
