@@ -156,7 +156,7 @@ namespace ElectricalSiteAutoBuild
         public void EsabInitialise()
         {
             GeometryMethods ge = new GeometryMethods();
-            ge.InitialiseFeatureGeometry();
+            ge.InitialiseGeometry();
         }
 
 
@@ -183,6 +183,7 @@ namespace ElectricalSiteAutoBuild
             using (Transaction tr = acDoc.TransactionManager.StartTransaction())
             {
                 Polyline pline = (Polyline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
+
                 pline.Highlight();
                 acEd.UpdateScreen();
 
@@ -208,8 +209,12 @@ namespace ElectricalSiteAutoBuild
 
                 route.ToXdictionary(pline);
 
+                pline.UpgradeOpen();
+                pline.Layer = "_Esab_Routes";
+                pline.Linetype = "ByLayer";
+
                 pline.Unhighlight();
-                acEd.UpdateScreen();
+                acEd.Regen();
 
                 tr.Commit();
 
@@ -242,6 +247,10 @@ namespace ElectricalSiteAutoBuild
             ResultBuffer rb;
             Extents3d ext;
             bool hasFeature;
+            DBObject mkr;
+            ObjectId mkrid;
+            EsabRoute route = new EsabRoute();
+            EsabFeature feature;
 
             using (Transaction tr = acDoc.TransactionManager.StartTransaction())
             {
@@ -256,67 +265,77 @@ namespace ElectricalSiteAutoBuild
                     return;
                 }
 
-
                 ext = pline.GeometricExtents;
 
-                EsabRoute route = new EsabRoute();
                 route.FromXdictionary(pline);
 
                 acEd.SetCurrentView(ed.ZoomEntity(acEd, ext, 1.4));
 
-                if (rb != null)
-                {
-                    int vCount = pline.NumberOfVertices;
-
-                    // cycle through polyline vertices
-                    //
-                    for (int i = 0; i < vCount; i++)
-                    {
-                        // focus on current vertex
-                        //
-                        Point2d vPnt2 = pline.GetPoint2dAt(i);
-                        Point3d vPnt3 = pline.GetPoint3dAt(i);
-                        ed.RedDiamond(vPnt2, 0.2);
-
-                        // notify feature at current vertex
-                        //
-                        hasFeature = route.featureIds[i] != route.id;
-                        if (hasFeature)
-                        {
-                            // vertex already has feature
-                            //
-                            acEd.WriteMessage($"\nVertex {i} has feature. \n");
-                        }
-                        else
-                        {
-                            // vertex is empty
-                            //
-                            acEd.WriteMessage($"\nSelect feature for vertex {i}: ");
-                            EsabFeatureType ft = ed.GetFeatureFromKeywords("");
-
-                            gm.CreateFeatureMarker(ft, 0.2, vPnt3);
-
-                            acEd.UpdateScreen();
-                        }
-                        
-                        
-                        //acEd.WriteMessage("\n" + hasFeature.ToString());
-                    
-                        //Application.ShowAlertDialog("next");
-                        //acEd.Regen();
-
-                    }
-
-                }
-                else
-                {
-                    acEd.WriteMessage("\nPolyline does not contain any ElectricalSiteAutoBuild data");
-                    acEd.WriteMessage("\nExiting Command\n");
-                    return;
-                }
-
                 tr.Commit();
             }
+
+            if (rb != null)
+            {
+                int vCount = pline.NumberOfVertices;
+
+                // cycle through polyline vertices
+                //
+                for (int i = 0; i < vCount; i++)
+                {
+                    // focus on current vertex
+                    //
+                    Point2d vPnt2 = pline.GetPoint2dAt(i);
+                    Point3d vPnt3 = pline.GetPoint3dAt(i);
+                    ed.RedDiamond(vPnt2, 0.2);
+
+                    // notify feature at current vertex
+                    //
+                    hasFeature = route.featureIds[i] != route.id;
+                    if (hasFeature)
+                    {
+                        // vertex already has feature
+                        //
+                        acEd.WriteMessage($"\nVertex {i} has feature. \n");
+                    }
+                    else
+                    {
+                        // vertex is empty
+                        //
+                        acEd.WriteMessage($"\nSelect feature for vertex {i}: ");
+                        EsabFeatureType ft = ed.GetFeatureFromKeywords("");
+
+                        mkrid = gm.CreateFeatureMarker(ft, 0.2, vPnt3);
+                        feature = new EsabFeature()
+                        {
+                            id = mkrid,
+                            type = xdType.Feature,
+                            parentId = pline.ObjectId,
+                            parentVertex = i,
+                            featureType = ft
+                        };
+
+                        using (Transaction tr = acDoc.TransactionManager.StartTransaction())
+                        {
+                            mkr = (DBObject)tr.GetObject(mkrid, OpenMode.ForWrite);
+                            feature.ToXdictionary(mkr);
+                            tr.Commit();
+                        }
+                            
+
+
+                        acEd.Regen();
+                    }
+                        
+                }
+
+            }
+            else
+            {
+                acEd.WriteMessage("\nPolyline does not contain any ElectricalSiteAutoBuild data");
+                acEd.WriteMessage("\nExiting Command\n");
+                return;
+            }
+
 
         }
 
