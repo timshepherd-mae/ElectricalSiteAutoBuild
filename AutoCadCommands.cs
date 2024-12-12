@@ -152,6 +152,14 @@ namespace ElectricalSiteAutoBuild
         #endregion TestCommands
 
 
+        [CommandMethod("ESABINIT")]
+        public void EsabInitialise()
+        {
+            GeometryMethods ge = new GeometryMethods();
+            ge.InitialiseFeatureGeometry();
+        }
+
+
         [CommandMethod("EsabAssignRouteProps")]
         public void AssignRouteProperties()
         {
@@ -286,16 +294,16 @@ namespace ElectricalSiteAutoBuild
                             acEd.WriteMessage($"\nSelect feature for vertex {i}: ");
                             EsabFeatureType ft = ed.GetFeatureFromKeywords("");
 
-                            gm.EntityTransactionAdd(tr, gm.FeatureMarker(ft, 0.2, vPnt3));
+                            gm.CreateFeatureMarker(ft, 0.2, vPnt3);
 
-                            
+                            acEd.UpdateScreen();
                         }
                         
                         
                         //acEd.WriteMessage("\n" + hasFeature.ToString());
                     
                         //Application.ShowAlertDialog("next");
-                        acEd.Regen();
+                        //acEd.Regen();
 
                     }
 
