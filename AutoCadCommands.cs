@@ -304,7 +304,7 @@ namespace ElectricalSiteAutoBuild
                         acEd.WriteMessage($"\nSelect feature for vertex {i}: ");
                         EsabFeatureType ft = ed.GetFeatureFromKeywords("");
 
-                        mkrid = gm.CreateFeatureMarker(ft, 0.2, vPnt3);
+                        mkrid = gm.CreateFeatureMarker(ft, 0.5, vPnt3);
                         feature = new EsabFeature()
                         {
                             id = mkrid,
@@ -313,6 +313,8 @@ namespace ElectricalSiteAutoBuild
                             parentVertex = i,
                             featureType = ft
                         };
+
+                        // TODO feed feature objectIds back into route feature list
 
                         using (Transaction tr = acDoc.TransactionManager.StartTransaction())
                         {

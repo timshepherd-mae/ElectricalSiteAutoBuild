@@ -43,7 +43,23 @@ namespace ElectricalSiteAutoBuild
 
                         lt.Add(lyr);
                         tr.AddNewlyCreatedDBObject(lyr, true);
-                        
+
+                    }
+                }
+
+                if (!lt.Has("_Esab_Terminators"))
+                {
+                    using (LayerTableRecord lyr = new LayerTableRecord())
+                    {
+                        lyr.Name = "_Esab_Terminators";
+                        Color lcol = new Color();
+                        lcol = Color.FromColorIndex(ColorMethod.ByAci, 6);
+                        lyr.Color = lcol;
+                        lyr.LineWeight = LineWeight.LineWeight025;
+
+                        lt.Add(lyr);
+                        tr.AddNewlyCreatedDBObject(lyr, true);
+
                     }
                 }
 
@@ -67,7 +83,70 @@ namespace ElectricalSiteAutoBuild
                 tr.Commit();
             }
 
-            // PI
+            List<string> FeatureBlockNames = new List<string>() { "PI", "CVT", "ESW", "SA", "NUL" };
+
+            foreach (string featureBlockName in FeatureBlockNames)
+            {
+                using (Transaction tr = acDoc.TransactionManager.StartTransaction())
+                {
+                    BlockTable bt = (BlockTable)tr.GetObject(acDb.BlockTableId, OpenMode.ForRead);
+
+                    if (!bt.Has("ESAB" + featureBlockName))
+                    {
+                        using (BlockTableRecord btr = new BlockTableRecord())
+                        {
+                            btr.Name = "ESAB" + featureBlockName;
+                            btr.Origin = Point3d.Origin;
+
+                            Circle c = new Circle()
+                            {
+                                Radius = 0.5,
+                                Center = btr.Origin,
+                                ColorIndex = 0,
+                                LineWeight = LineWeight.ByBlock
+                            };
+                            btr.AppendEntity(c);
+
+                            Line l1 = new Line()
+                            {
+                                StartPoint = new Point3d(0.5, 0.5, 0.0),
+                                EndPoint = new Point3d(-0.5, -0.5, 0.0),
+                                ColorIndex = 0,
+                                LineWeight = LineWeight.ByBlock
+                            };
+                            btr.AppendEntity(l1);
+
+                            Line l2 = new Line()
+                            {
+                                StartPoint = new Point3d(-0.5, 0.5, 0.0),
+                                EndPoint = new Point3d(0.5, -0.5, 0.0),
+                                ColorIndex = 0,
+                                LineWeight = LineWeight.ByBlock
+                            };
+                            btr.AppendEntity(l2);
+
+                            DBText t = new DBText()
+                            {
+                                TextString = featureBlockName,
+                                Height = 0.5,
+                                VerticalMode = TextVerticalMode.TextBottom,
+                                HorizontalMode = TextHorizontalMode.TextLeft,
+                                AlignmentPoint = new Point3d(0.65, 0.65, 0.0),
+                                ColorIndex = 0
+                            };
+                            btr.AppendEntity(t);
+
+                            tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
+                            bt.Add(btr);
+                            tr.AddNewlyCreatedDBObject(btr, true);
+                            tr.Commit();
+                        }
+                    }
+                }
+            }
+        }
+
+ /*           // PI
             using (Transaction tr = acDoc.TransactionManager.StartTransaction())
             {
                 BlockTable bt = (BlockTable)tr.GetObject(acDb.BlockTableId, OpenMode.ForRead);
@@ -105,6 +184,17 @@ namespace ElectricalSiteAutoBuild
                             LineWeight = LineWeight.ByBlock
                         };
                         btr.AppendEntity(l2);
+
+                        DBText t = new DBText()
+                        {
+                            TextString = "PI",
+                            Height = 0.5,
+                            VerticalMode = TextVerticalMode.TextBottom,
+                            HorizontalMode = TextHorizontalMode.TextLeft,
+                            AlignmentPoint = new Point3d(0.65, 0.65, 0.0),
+                            ColorIndex = 0
+                        };
+                        btr.AppendEntity(t);
 
                         tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
                         bt.Add(btr);
@@ -287,6 +377,8 @@ namespace ElectricalSiteAutoBuild
             }
 
         }
+ */
+
         public ObjectId CreateFeatureMarker(EsabFeatureType ft, double size, Point3d placement)
         {
 
