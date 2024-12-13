@@ -192,7 +192,9 @@ namespace ElectricalSiteAutoBuild
                 route.id = pline.ObjectId;
                 route.rating = (EsabRating)ed.GetEnumFromKeywords(typeof(EsabRating), "Rating");
                 route.phase = (EsabPhaseType)ed.GetEnumFromKeywords(typeof(EsabPhaseType), "Phase");
+                if (route.phase == EsabPhaseType.ThreePhase) route.phasesep = ed.GetInt("Phase Separation Distance");
                 route.phasecol = (EsabPhaseColour)ed.GetEnumFromKeywords(typeof(EsabPhaseColour), "Phase Colour");
+                route.defaultConductorType = (EsabConductorType)ed.GetEnumFromKeywords(typeof(EsabConductorType), "Default Conductor");
 
                 // one feature id per vertex
                 //
@@ -317,7 +319,7 @@ namespace ElectricalSiteAutoBuild
                                 using (Transaction tr = acDoc.TransactionManager.StartTransaction())
                                 {
                                     mkr = (DBObject)tr.GetObject(mkrid, OpenMode.ForWrite);
-                                    //feature.ToXdictionary(mkr);
+                                    terminator.ToXdictionary(mkr);
                                     tr.Commit();
                                 }
 
@@ -335,13 +337,13 @@ namespace ElectricalSiteAutoBuild
                                     type = EsabXdType.Junction,
                                     routemain = pline.ObjectId,
                                     routebranch = pline.ObjectId,
-                                    junctionType = jn
+                                    junctiontype = jn
                                 };
 
                                 using (Transaction tr = acDoc.TransactionManager.StartTransaction())
                                 {
                                     mkr = (DBObject)tr.GetObject(mkrid, OpenMode.ForWrite);
-                                    //feature.ToXdictionary(mkr);
+                                    junction.ToXdictionary(mkr);
                                     tr.Commit();
                                 }
 

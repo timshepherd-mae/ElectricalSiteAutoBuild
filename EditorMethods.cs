@@ -13,14 +13,25 @@ namespace ElectricalSiteAutoBuild
     {
         // autocad editor methods to reduce commandmethod code
         //
-        public double GetRealInput(string prompt)
+        public double GetDbl(string prompt)
         {
             Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
 
             PromptDoubleOptions pdo = new PromptDoubleOptions($"\n{prompt}: ");
             PromptDoubleResult pdr = acEd.GetDouble(pdo);
-            acEd.WriteMessage($"\n{pdr.Value.ToString()}\n");
+            acEd.WriteMessage($"\n{pdr.Value}\n");
             return pdr.Value;
+        }
+
+        public int GetInt(string prompt)
+        {
+            Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
+
+            PromptIntegerOptions pio = new PromptIntegerOptions($"\n{prompt}: ");
+            //PromptDoubleOptions pdo = new PromptDoubleOptions($"\n{prompt}: ");
+            PromptIntegerResult pir = acEd.GetInteger(pio);
+            acEd.WriteMessage($"\n{pir.Value}\n");
+            return pir.Value;
         }
 
         public int GetEnumFromKeywords(Type e, string prompt)
