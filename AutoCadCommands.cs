@@ -196,6 +196,7 @@ namespace ElectricalSiteAutoBuild
                 route.id = pline.ObjectId;
                 route.rating = ed.GetRatingFromKeywords();
                 route.phase = ed.GetPhaseFromKeywords();
+
                 route.phasecol = ed.GetPhaseColourFromKeywords();
                 route.endType1 = ed.GetEndConnectorFromKeywords("End 1");
                 route.endType2 = ed.GetEndConnectorFromKeywords("End 2");
@@ -322,8 +323,6 @@ namespace ElectricalSiteAutoBuild
                             feature.ToXdictionary(mkr);
                             tr.Commit();
                         }
-                            
-
 
                         acEd.Regen();
                     }

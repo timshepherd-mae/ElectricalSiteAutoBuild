@@ -74,6 +74,7 @@ namespace ElectricalSiteAutoBuild
         public EsabTerminatorType endType1;
         public EsabTerminatorType endType2;
         public PhaseType phase;
+        public int phasesep;
         public PhaseColour phasecol;
         public ObjectIdCollection featureIds = new ObjectIdCollection();
 
@@ -88,11 +89,11 @@ namespace ElectricalSiteAutoBuild
             int tvCount = featureIds.Count + 7;
             TypedValue[] xdata = new TypedValue[tvCount];
 
-            xdata[0] = new TypedValue((int)DxfCode.SoftPointerId, id);
-            xdata[1] = new TypedValue((int)DxfCode.Int32, type);
-            xdata[2] = new TypedValue((int)DxfCode.Int32, rating);
-            xdata[3] = new TypedValue((int)DxfCode.Int32, phase);
-            xdata[4] = new TypedValue((int)DxfCode.Int32, phasecol);
+            xdata[0] = new TypedValue((int)DxfCode.SoftPointerId, id);  // route ent id
+            xdata[1] = new TypedValue((int)DxfCode.Int32, type);        // esab type
+            xdata[2] = new TypedValue((int)DxfCode.Int32, rating);      // kv value
+            xdata[3] = new TypedValue((int)DxfCode.Int32, phase);       // single/three phase
+            xdata[4] = new TypedValue((int)DxfCode.Int32, phasecol);    // phace color
             xdata[5] = new TypedValue((int)DxfCode.Int32, endType1);
             xdata[6] = new TypedValue((int)DxfCode.Int32, endType2);
             
@@ -153,7 +154,7 @@ namespace ElectricalSiteAutoBuild
 
     public enum EsabTerminatorType
     {
-        SGT, CSE, GIS, OHC, Junction, Null
+        SGT, CSE, GIS, OHC, JNC, NUL
     }
     public enum ConductorType
     {
