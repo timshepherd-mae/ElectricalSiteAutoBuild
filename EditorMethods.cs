@@ -23,79 +23,22 @@ namespace ElectricalSiteAutoBuild
             return pdr.Value;
         }
 
-        public EsabRating GetRatingFromKeywords()
+        public int GetEnumFromKeywords(Type e, string prompt)
         {
             Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
 
-            PromptKeywordOptions pko = new PromptKeywordOptions("\nRating: ");
-            foreach (string s in Enum.GetNames(typeof(EsabRating)))
+            PromptKeywordOptions pko = new PromptKeywordOptions($"\n{prompt}: ");
+            foreach (string s in Enum.GetNames(e) )
             {
                 pko.Keywords.Add(s);
             }
-
+            
             PromptResult kwd = acEd.GetKeywords(pko);
+            
             acEd.WriteMessage("\n" + kwd.StringResult + "\n");
-            return (EsabRating)Enum.Parse(typeof(EsabRating), kwd.StringResult);
+            return (int)Enum.Parse(e, kwd.StringResult);
         }
 
-        public PhaseType GetPhaseFromKeywords()
-        {
-            Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
-
-            PromptKeywordOptions pko = new PromptKeywordOptions("\nPhase: ");
-            foreach (string s in Enum.GetNames(typeof(PhaseType)))
-            {
-                pko.Keywords.Add(s);
-            }
-
-            PromptResult kwd = acEd.GetKeywords(pko);
-            acEd.WriteMessage("\n" + kwd.StringResult + "\n");
-            return (PhaseType)Enum.Parse(typeof(PhaseType), kwd.StringResult);
-        }
-
-        public PhaseColour GetPhaseColourFromKeywords()
-        {
-            Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
-
-            PromptKeywordOptions pko = new PromptKeywordOptions("\nPhase Colour: ");
-            foreach (string s in Enum.GetNames(typeof(PhaseColour)))
-            {
-                pko.Keywords.Add(s);
-            }
-
-            PromptResult kwd = acEd.GetKeywords(pko);
-            acEd.WriteMessage("\n" + kwd.StringResult + "\n");
-            return (PhaseColour)Enum.Parse(typeof(PhaseColour), kwd.StringResult);
-        }
-        public EsabTerminatorType GetEndConnectorFromKeywords(string prompt)
-        {
-            Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
-
-            PromptKeywordOptions pko = new PromptKeywordOptions("\n" + prompt + ": ");
-            foreach (string s in Enum.GetNames(typeof(EsabTerminatorType)))
-            {
-                pko.Keywords.Add(s);
-            }
-
-            PromptResult kwd = acEd.GetKeywords(pko);
-            acEd.WriteMessage("\n" + kwd.StringResult + "\n");
-            return (EsabTerminatorType)Enum.Parse(typeof(EsabTerminatorType), kwd.StringResult);
-        }
-
-        public EsabFeatureType GetFeatureFromKeywords(string prompt)
-        {
-            Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
-
-            PromptKeywordOptions pko = new PromptKeywordOptions("\n" + prompt + ": ");
-            foreach (string s in Enum.GetNames(typeof(EsabFeatureType)))
-            {
-                pko.Keywords.Add(s);
-            }
-
-            PromptResult kwd = acEd.GetKeywords(pko);
-            acEd.WriteMessage("\n" + kwd.StringResult + "\n");
-            return (EsabFeatureType)Enum.Parse(typeof(EsabFeatureType), kwd.StringResult);
-        }
 
         public ViewTableRecord ZoomEntity(Editor acEd, Extents3d ext, double zoomfactor)
         {

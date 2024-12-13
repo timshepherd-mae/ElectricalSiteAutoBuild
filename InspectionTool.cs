@@ -67,20 +67,18 @@ namespace ElectricalSiteAutoBuild
                 if (rb != null)
                 {
                     var data = rb.AsArray();
-                    var type = (xdType)Enum.ToObject(typeof(xdType), data[1].Value);
+                    var type = (EsabXdType)Enum.ToObject(typeof(EsabXdType), data[1].Value);
                     this.lvwItems.Items.Add("Dictionary Type: " + type.ToString());
 
-                    if (type == xdType.Route)
+                    if (type == EsabXdType.Route)
                     {
                         this.lvwItems.Items.Add("Rating: " + (EsabRating)Enum.ToObject(typeof(EsabRating), data[2].Value));
-                        this.lvwItems.Items.Add("Phase: " + (PhaseType)Enum.ToObject(typeof(PhaseType), data[3].Value));
-                        this.lvwItems.Items.Add("Colour: " + (PhaseColour)Enum.ToObject(typeof(PhaseColour), data[4].Value));
-                        this.lvwItems.Items.Add("End1: " + (EsabTerminatorType)Enum.ToObject(typeof(EsabTerminatorType), data[5].Value));
-                        this.lvwItems.Items.Add("End2: " + (EsabTerminatorType)Enum.ToObject(typeof(EsabTerminatorType), data[6].Value));
+                        this.lvwItems.Items.Add("Phase: " + (EsabPhaseType)Enum.ToObject(typeof(EsabPhaseType), data[3].Value));
+                        this.lvwItems.Items.Add("Colour: " + (EsabPhaseColour)Enum.ToObject(typeof(EsabPhaseColour), data[4].Value));
                         
 
                     }
-                    if (type == xdType.Feature)
+                    if (type == EsabXdType.Feature)
                     {
                         this.lvwItems.Items.Add("Type: " + (EsabFeatureType)Enum.ToObject(typeof(EsabFeatureType), data[4].Value));
                     }

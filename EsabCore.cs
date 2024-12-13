@@ -23,7 +23,7 @@ namespace ElectricalSiteAutoBuild
     public class EsabFeature
     {
         public ObjectId id;
-        public xdType type = xdType.Feature;
+        public EsabXdType type = EsabXdType.Feature;
         public ObjectId parentId;
         public int parentVertex;
         public EsabFeatureType featureType;
@@ -55,7 +55,7 @@ namespace ElectricalSiteAutoBuild
             {
                 var data = rb.AsArray();
                 id = (ObjectId)data[0].Value;
-                type = (xdType)Enum.ToObject(typeof(xdType), data[1].Value);
+                type = (EsabXdType)Enum.ToObject(typeof(EsabXdType), data[1].Value);
                 parentId = (ObjectId)data[2].Value;
                 parentVertex = (int)data[3].Value;
                 featureType = (EsabFeatureType)Enum.ToObject(typeof(EsabFeatureType), data[4].Value);
@@ -69,13 +69,12 @@ namespace ElectricalSiteAutoBuild
     public class EsabRoute
     {
         public ObjectId id;
-        public xdType type = xdType.Route;
+        public EsabXdType type = EsabXdType.Route;
         public EsabRating rating;
-        public EsabTerminatorType endType1;
-        public EsabTerminatorType endType2;
-        public PhaseType phase;
+        public EsabPhaseType phase;
         public int phasesep;
-        public PhaseColour phasecol;
+        public EsabPhaseColour phasecol;
+        public EsabConductorType defaultConductorType;
         public ObjectIdCollection featureIds = new ObjectIdCollection();
 
         // constructors
@@ -94,8 +93,6 @@ namespace ElectricalSiteAutoBuild
             xdata[2] = new TypedValue((int)DxfCode.Int32, rating);      // kv value
             xdata[3] = new TypedValue((int)DxfCode.Int32, phase);       // single/three phase
             xdata[4] = new TypedValue((int)DxfCode.Int32, phasecol);    // phace color
-            xdata[5] = new TypedValue((int)DxfCode.Int32, endType1);
-            xdata[6] = new TypedValue((int)DxfCode.Int32, endType2);
             
             for (int i = 0; i < featureIds.Count; i++)
             {
@@ -114,12 +111,10 @@ namespace ElectricalSiteAutoBuild
             {
                 var data = rb.AsArray();
                 id = (ObjectId)data[0].Value;
-                type = (xdType)Enum.ToObject(typeof(xdType), data[1].Value);
+                type = (EsabXdType)Enum.ToObject(typeof(EsabXdType), data[1].Value);
                 rating = (EsabRating)Enum.ToObject(typeof(EsabRating), data[2].Value);
-                phase = (PhaseType)Enum.ToObject(typeof(PhaseType), data[3].Value);
-                phasecol = (PhaseColour)Enum.ToObject(typeof(PhaseColour), data[4].Value);
-                endType1 = (EsabTerminatorType)Enum.ToObject(typeof(EsabTerminatorType), data[5].Value);
-                endType2 = (EsabTerminatorType)Enum.ToObject(typeof(EsabTerminatorType), data[6].Value);
+                phase = (EsabPhaseType)Enum.ToObject(typeof(EsabPhaseType), data[3].Value);
+                phasecol = (EsabPhaseColour)Enum.ToObject(typeof(EsabPhaseColour), data[4].Value);
                 for (int i = 7; i < data.Length; i++)
                 {
                         featureIds.Add((ObjectId)data[i].Value);
@@ -135,7 +130,25 @@ namespace ElectricalSiteAutoBuild
 
     public class EsabConductor
     {
-        EsabTerminatorType connectionType;
+        
+    }
+
+    public class EsabTerminator
+    {
+        public ObjectId id;
+        public EsabXdType type = EsabXdType.Terminator;
+        public ObjectId routeA;
+        public ObjectId routeB;
+        public EsabTerminatorType terminatortype;
+    }
+
+    public class EsabJunction
+    {
+        public ObjectId id;
+        public EsabXdType type = EsabXdType.Junction;
+        public ObjectId routemain;
+        public ObjectId routebranch;
+        public EsabJunctionType junctionType;
     }
 
 
@@ -149,31 +162,37 @@ namespace ElectricalSiteAutoBuild
 
     public enum EsabFeatureType
     {
-        PI, ESW, CVT, SA, NUL
+        PI, RI, ESW, CVT, SA, NUL, Terminator, Junction
     }
 
     public enum EsabTerminatorType
     {
         SGT, CSE, GIS, OHC, JNC, NUL
     }
-    public enum ConductorType
+
+    public enum EsabJunctionType
+    {
+        POST, FORK
+    }
+
+    public enum EsabConductorType
     {
         GIB, Busbar, Cable
     }
  
-    public enum PhaseType
+    public enum EsabPhaseType
     {
         Single, ThreePhase
     }
 
-    public enum PhaseColour
+    public enum EsabPhaseColour
     {
-        Red, Yellow, Blue, RYB, BYR
+        R, Y, B, RYB, BYR, RBY, BRY, YRB, YBR
     }
 
-    public enum xdType
+    public enum EsabXdType
     {
-        Route, Feature, Conductor, Connector
+        Route, Feature, Conductor, Terminator, Junction
     } 
 
     #endregion Enumerators
