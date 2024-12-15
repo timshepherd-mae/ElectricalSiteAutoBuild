@@ -23,7 +23,8 @@ namespace ElectricalSiteAutoBuild
             EditorMethods ed = new EditorMethods();
             GeometryMethods gm = new GeometryMethods();
 
-            // LYR
+            #region Layers
+
             using (Transaction tr = acDb.TransactionManager.StartTransaction())
             {
                 LayerTable lt = (LayerTable)tr.GetObject(acDb.LayerTableId, OpenMode.ForWrite);
@@ -69,7 +70,7 @@ namespace ElectricalSiteAutoBuild
                     {
                         lyr.Name = "_Esab_Terminators";
                         Color lcol = new Color();
-                        lcol = Color.FromColorIndex(ColorMethod.ByAci, 8);
+                        lcol = Color.FromColorIndex(ColorMethod.ByAci, 4);
                         lyr.Color = lcol;
                         lyr.LineWeight = LineWeight.LineWeight025;
 
@@ -85,7 +86,7 @@ namespace ElectricalSiteAutoBuild
                     {
                         lyr.Name = "_Esab_Routes";
                         Color lcol = new Color();
-                        lcol = Color.FromColorIndex(ColorMethod.ByAci, 4);
+                        lcol = Color.FromColorIndex(ColorMethod.ByAci, 7);
                         lyr.Color = lcol;
                         lyr.LineWeight = LineWeight.LineWeight025;
                         lyr.LinetypeObjectId = RouteLT;
@@ -98,6 +99,10 @@ namespace ElectricalSiteAutoBuild
 
                 tr.Commit();
             }
+
+            #endregion Layers
+
+            #region Marker Blocks
 
             string[] FeatureBlockNames = Enum.GetNames(typeof(EsabFeatureType));
             foreach (string featureBlockName in FeatureBlockNames)
@@ -263,11 +268,156 @@ namespace ElectricalSiteAutoBuild
                         }
                     }
                 }
+
+                MlineStyle mls = new MlineStyle()
+                {
+                    
+                };
+
             }
 
+            #endregion Marker Blocks
+
+            #region MLine Styles
+
+            MlineStyle mlStyle;
+            MlineStyleElement element;
+
+            Color R = Color.FromColorIndex(ColorMethod.ByAci, 1);
+            Color Y = Color.FromColorIndex(ColorMethod.ByAci, 2);
+            Color B = Color.FromColorIndex(ColorMethod.ByAci, 5);
+
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
+            {
+
+                DBDictionary mlDict = (DBDictionary)tr.GetObject(acDb.MLStyleDictionaryId, OpenMode.ForRead);
+                if (!mlDict.Contains("esabRYB"))
+                {
+                    mlDict.UpgradeOpen();
+
+                    mlStyle = new MlineStyle();
+                    mlDict.SetAt("esabRYB", mlStyle);
+                    tr.AddNewlyCreatedDBObject(mlStyle, true);
+
+                    mlStyle.Name = "esabRYB";
+                    mlStyle.StartAngle = 3.14159 * 0.5;
+                    mlStyle.EndAngle = 3.14159 * 0.5;
+
+                    element = new MlineStyleElement(+0.25, R, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+                    element = new MlineStyleElement(+0.00, Y, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+                    element = new MlineStyleElement(-0.25, B, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+
+                }
+                if (!mlDict.Contains("esabBYR"))
+                {
+                    mlDict.UpgradeOpen();
+
+                    mlStyle = new MlineStyle();
+                    mlDict.SetAt("esabBYR", mlStyle);
+                    tr.AddNewlyCreatedDBObject(mlStyle, true);
+
+                    mlStyle.Name = "esabBYR";
+                    mlStyle.StartAngle = 3.14159 * 0.5;
+                    mlStyle.EndAngle = 3.14159 * 0.5;
+
+                    element = new MlineStyleElement(+0.25, B, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+                    element = new MlineStyleElement(+0.00, Y, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+                    element = new MlineStyleElement(-0.25, R, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+
+                }
+                if (!mlDict.Contains("esabRBY"))
+                {
+                    mlDict.UpgradeOpen();
+
+                    mlStyle = new MlineStyle();
+                    mlDict.SetAt("esabRBY", mlStyle);
+                    tr.AddNewlyCreatedDBObject(mlStyle, true);
+
+                    mlStyle.Name = "esabRBY";
+                    mlStyle.StartAngle = 3.14159 * 0.5;
+                    mlStyle.EndAngle = 3.14159 * 0.5;
+
+                    element = new MlineStyleElement(+0.25, R, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+                    element = new MlineStyleElement(+0.00, B, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+                    element = new MlineStyleElement(-0.25, Y, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+
+                }
+                if (!mlDict.Contains("esabBRY"))
+                {
+                    mlDict.UpgradeOpen();
+
+                    mlStyle = new MlineStyle();
+                    mlDict.SetAt("esabBRY", mlStyle);
+                    tr.AddNewlyCreatedDBObject(mlStyle, true);
+
+                    mlStyle.Name = "esabBRY";
+                    mlStyle.StartAngle = 3.14159 * 0.5;
+                    mlStyle.EndAngle = 3.14159 * 0.5;
+
+                    element = new MlineStyleElement(+0.25, B, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+                    element = new MlineStyleElement(+0.00, R, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+                    element = new MlineStyleElement(-0.25, Y, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+
+                }
+                if (!mlDict.Contains("esabYRB"))
+                {
+                    mlDict.UpgradeOpen();
+
+                    mlStyle = new MlineStyle();
+                    mlDict.SetAt("esabYRB", mlStyle);
+                    tr.AddNewlyCreatedDBObject(mlStyle, true);
+
+                    mlStyle.Name = "esabYRB";
+                    mlStyle.StartAngle = 3.14159 * 0.5;
+                    mlStyle.EndAngle = 3.14159 * 0.5;
+
+                    element = new MlineStyleElement(+0.25, Y, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+                    element = new MlineStyleElement(+0.00, R, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+                    element = new MlineStyleElement(-0.25, B, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+
+                }
+                if (!mlDict.Contains("esabYBR"))
+                {
+                    mlDict.UpgradeOpen();
+
+                    mlStyle = new MlineStyle();
+                    mlDict.SetAt("esabYBR", mlStyle);
+                    tr.AddNewlyCreatedDBObject(mlStyle, true);
+
+                    mlStyle.Name = "esabYBR";
+                    mlStyle.StartAngle = 3.14159 * 0.5;
+                    mlStyle.EndAngle = 3.14159 * 0.5;
+
+                    element = new MlineStyleElement(+0.25, Y, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+                    element = new MlineStyleElement(+0.00, B, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+                    element = new MlineStyleElement(-0.25, R, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+
+                }
+
+                tr.Commit();
+            }
+
+            #endregion MLine Styles
 
         }
-
 
         public ObjectId CreateFeatureMarker(EsabFeatureType ft, double size, Point3d placement)
         {
@@ -334,6 +484,7 @@ namespace ElectricalSiteAutoBuild
 
                         br.TransformBy(Matrix3d.Scaling(size, placement));
                         br.Layer = "_Esab_Junctions";
+                        br.ColorIndex = 8;
 
                         BlockTableRecord btr = (BlockTableRecord)tr.GetObject(acDb.CurrentSpaceId, OpenMode.ForWrite);
                         btr.AppendEntity(br);
@@ -350,6 +501,7 @@ namespace ElectricalSiteAutoBuild
 
             return mkrid;
         }
+
         public ObjectId CreateTerminatorMarker(EsabTerminatorType ft, double size, Point3d placement)
         {
 
@@ -374,6 +526,7 @@ namespace ElectricalSiteAutoBuild
 
                         br.TransformBy(Matrix3d.Scaling(size, placement));
                         br.Layer = "_Esab_Terminators";
+                        br.ColorIndex = 8;
 
                         BlockTableRecord btr = (BlockTableRecord)tr.GetObject(acDb.CurrentSpaceId, OpenMode.ForWrite);
                         btr.AppendEntity(br);
@@ -390,5 +543,6 @@ namespace ElectricalSiteAutoBuild
 
             return mkrid;
         }
+
     }
 }

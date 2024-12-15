@@ -29,11 +29,13 @@ namespace ElectricalSiteAutoBuild
         }
 
         private ObjectId lastSelection;
+        private ObjectIdCollection lastSelectionGroup;
 
         public InspectionTool()
         {
             InitializeComponent();
             this.lastSelection = ObjectId.Null;
+            this.lastSelectionGroup = new ObjectIdCollection();
         }
 
         private void InspectionTool_Load(object sender, EventArgs e)
@@ -50,7 +52,7 @@ namespace ElectricalSiteAutoBuild
         private void btnSelect_Click(object sender, EventArgs e)
         {
             this.lvwItems.Items.Clear();
-            
+            this.lastSelectionGroup = new ObjectIdCollection();
 
             acApp.Document acDoc = acApp.Application.DocumentManager.MdiActiveDocument;
             Editor acEd = acDoc.Editor;
@@ -82,18 +84,38 @@ namespace ElectricalSiteAutoBuild
                         this.lvwItems.Items.Add("Separation: " + data[4].Value);
                         this.lvwItems.Items.Add("Colour:     " + (EsabPhaseColour)Enum.ToObject(typeof(EsabPhaseColour), data[5].Value));
                         this.lvwItems.Items.Add("Conductor:  " + (EsabConductorType)Enum.ToObject(typeof(EsabConductorType), data[6].Value));
+                        if (Constants.ShowObjIds) this.lvwItems.Items.Add("Route Id:   " + data[0].Value);
+
+                        this.lastSelectionGroup.Add(ent.ObjectId);
+                        for (int i = 7; i < data.Length; i++)
+                        {
+                            this.lastSelectionGroup.Add((ObjectId)data[i].Value);
+                        }
                     }
                     if (type == EsabXdType.Feature)
                     {
-                        this.lvwItems.Items.Add("Type: " + (EsabFeatureType)Enum.ToObject(typeof(EsabFeatureType), data[4].Value));
+                        this.lvwItems.Items.Add("Item Type:  " + (EsabFeatureType)Enum.ToObject(typeof(EsabFeatureType), data[4].Value));
+                        if (Constants.ShowObjIds) this.lvwItems.Items.Add("Parent Id:  " + data[2].Value);
+                        this.lastSelectionGroup.Add(ent.ObjectId);
+                        this.lastSelectionGroup.Add((ObjectId)data[2].Value);
                     }
                     if (type == EsabXdType.Terminator)
                     {
-                        this.lvwItems.Items.Add("Type: " + (EsabTerminatorType)Enum.ToObject(typeof(EsabTerminatorType), data[4].Value));
+                        this.lvwItems.Items.Add("Item Type:  " + (EsabTerminatorType)Enum.ToObject(typeof(EsabTerminatorType), data[4].Value));
+                        if (Constants.ShowObjIds) this.lvwItems.Items.Add("RouteA Id:  " + data[2].Value);
+                        if (Constants.ShowObjIds) this.lvwItems.Items.Add("RouteB Id:  " + data[3].Value);
+                        this.lastSelectionGroup.Add(ent.ObjectId);
+                        this.lastSelectionGroup.Add((ObjectId)data[2].Value);
+                        this.lastSelectionGroup.Add((ObjectId)data[3].Value);
                     }
                     if (type == EsabXdType.Junction)
                     {
-                        this.lvwItems.Items.Add("Type: " + (EsabJunctionType)Enum.ToObject(typeof(EsabJunctionType), data[4].Value));
+                        this.lvwItems.Items.Add("Item Type:  " + (EsabJunctionType)Enum.ToObject(typeof(EsabJunctionType), data[4].Value));
+                        if (Constants.ShowObjIds) this.lvwItems.Items.Add("Main Id:    " + data[2].Value);
+                        if (Constants.ShowObjIds) this.lvwItems.Items.Add("Branch Id:  " + data[3].Value);
+                        this.lastSelectionGroup.Add(ent.ObjectId);
+                        this.lastSelectionGroup.Add((ObjectId)data[2].Value);
+                        this.lastSelectionGroup.Add((ObjectId)data[3].Value);
                     }
 
                 }
@@ -102,7 +124,8 @@ namespace ElectricalSiteAutoBuild
                     this.lvwItems.Items.Add("No ESAB data found");
                 }
 
-                this.lastSelection = ent.ObjectId;
+                //this.lastSelection = ent.ObjectId;
+
                 tr.Commit();
             }
 
@@ -130,18 +153,21 @@ namespace ElectricalSiteAutoBuild
 */
         private void btnLocate_MouseDown(object sender, MouseEventArgs e)
         {
-            if (this.lastSelection != null)
+            if (this.lastSelectionGroup.Count > 0)
             {
                 acApp.Document acDoc = acApp.Application.DocumentManager.MdiActiveDocument;
                 Editor acEd = acDoc.Editor;
 
-                using (Transaction tr = acDoc.TransactionManager.StartTransaction())
+                foreach (ObjectId objid in this.lastSelectionGroup)
                 {
-                    Entity ent = (Entity)tr.GetObject(this.lastSelection, OpenMode.ForRead);
-                    ent.Highlight();
-                    acEd.UpdateScreen();
+                    using (Transaction tr = acDoc.TransactionManager.StartTransaction())
+                    {
+                        Entity ent = (Entity)tr.GetObject(objid, OpenMode.ForRead);
+                        ent.Highlight();
+                        acEd.UpdateScreen();
 
-                    tr.Commit();
+                        tr.Commit();
+                    }
                 }
             }
         }
@@ -153,13 +179,16 @@ namespace ElectricalSiteAutoBuild
                 acApp.Document acDoc = acApp.Application.DocumentManager.MdiActiveDocument;
                 Editor acEd = acDoc.Editor;
 
-                using (Transaction tr = acDoc.TransactionManager.StartTransaction())
+                foreach (ObjectId objid in this.lastSelectionGroup)
                 {
-                    Entity ent = (Entity)tr.GetObject(this.lastSelection, OpenMode.ForRead);
-                    ent.Unhighlight();
-                    acEd.UpdateScreen();
+                    using (Transaction tr = acDoc.TransactionManager.StartTransaction())
+                    {
+                        Entity ent = (Entity)tr.GetObject(objid, OpenMode.ForRead);
+                        ent.Unhighlight();
+                        acEd.UpdateScreen();
 
-                    tr.Commit();
+                        tr.Commit();
+                    }
                 }
             }
         }

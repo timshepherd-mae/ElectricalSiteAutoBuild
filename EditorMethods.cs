@@ -4,6 +4,7 @@ using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.Geometry;
+using System.Windows.Documents;
 
 
 
@@ -34,14 +35,15 @@ namespace ElectricalSiteAutoBuild
             return pir.Value;
         }
 
-        public int GetEnumFromKeywords(Type e, string prompt)
+        public int GetEnumFromKeywords(Type e, string prompt, string ignore = "")
         {
             Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
 
             PromptKeywordOptions pko = new PromptKeywordOptions($"\n{prompt}: ");
             foreach (string s in Enum.GetNames(e) )
             {
-                pko.Keywords.Add(s);
+                if (!ignore.Contains(s))
+                    pko.Keywords.Add(s);
             }
             
             PromptResult kwd = acEd.GetKeywords(pko);
@@ -50,6 +52,46 @@ namespace ElectricalSiteAutoBuild
             return (int)Enum.Parse(e, kwd.StringResult);
         }
 
+        public ObjectId SelectExistingMarker(EsabXdType xdt)
+        {
+            Document acDoc = Application.DocumentManager.MdiActiveDocument;
+            Database acDb = acDoc.Database;
+            Editor acEd = acDoc.Editor;
+
+            PromptEntityOptions peo = new PromptEntityOptions("Select Existing Marker: ");
+            peo.SetRejectMessage("\nOnly BlockRef entities allowed: ");
+            peo.AddAllowedClass(typeof(BlockReference), true);
+            PromptEntityResult per = acEd.GetEntity(peo);
+
+            if (per.Status != PromptStatus.OK)
+                return ObjectId.Null;
+
+            ObjectId mkrid = ObjectId.Null;
+
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
+            {
+                DBObject dbo = (DBObject)tr.GetObject(per.ObjectId, OpenMode.ForRead);
+                ResultBuffer rb = dbo.GetXDictionaryXrecordData(Constants.XappName);
+
+                // check for esab xdict data
+                //
+                if (rb == null)
+                    return ObjectId.Null;
+
+                var data = rb.AsArray();
+                
+                // check for xdtype == junction
+                //
+                if ((int)data[1].Value != (int)xdt)
+                    return ObjectId.Null;
+
+                mkrid = (ObjectId)data[0].Value;
+                tr.Commit();
+            }
+
+            return mkrid;
+
+        }
 
         public ViewTableRecord ZoomEntity(Editor acEd, Extents3d ext, double zoomfactor)
         {

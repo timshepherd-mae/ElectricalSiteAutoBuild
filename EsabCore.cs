@@ -16,7 +16,7 @@ namespace ElectricalSiteAutoBuild
         // define app name for extended dictionary content
         //
         public const string XappName = "ESAB";
-
+        public const bool ShowObjIds = true;
 
     }
 
@@ -98,7 +98,7 @@ namespace ElectricalSiteAutoBuild
 
             for (int i = 0; i < featureIds.Count; i++)
             {
-                xdata[i + 7] = new TypedValue((int)DxfCode.SoftPointerId, id);
+                xdata[i + 7] = new TypedValue((int)DxfCode.SoftPointerId, featureIds[i]);
             }
 
             dbo.SetXDictionaryXrecordData(Constants.XappName, xdata);
@@ -146,6 +146,8 @@ namespace ElectricalSiteAutoBuild
         public ObjectId routeB;
         public EsabTerminatorType terminatortype;
 
+        // constructors
+        //
 
         #region transformers
         // xdict to class transformers
@@ -190,6 +192,9 @@ namespace ElectricalSiteAutoBuild
         public ObjectId routebranch;
         public EsabJunctionType junctiontype;
 
+        // constructors
+        //
+
         #region transformers
         // xdict to class transformers
 
@@ -224,8 +229,6 @@ namespace ElectricalSiteAutoBuild
 
     }
 
-
-
     #region Enumerators
 
     public enum EsabRating
@@ -240,12 +243,12 @@ namespace ElectricalSiteAutoBuild
 
     public enum EsabTerminatorType
     {
-        SGT, CSE, GIS, OHC, JNC, NUL
+        SGT, CSE, GIS, OHC, NUL, LinkTo
     }
 
     public enum EsabJunctionType
     {
-        POST, FORK
+        POST, FORK, LinkTo
     }
 
     public enum EsabConductorType

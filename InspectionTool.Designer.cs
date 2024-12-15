@@ -48,9 +48,10 @@
             // 
             this.lvwItems.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lvwItems.HideSelection = false;
-            this.lvwItems.Location = new System.Drawing.Point(5, 35);
+            this.lvwItems.Location = new System.Drawing.Point(5, 36);
+            this.lvwItems.MultiSelect = false;
             this.lvwItems.Name = "lvwItems";
-            this.lvwItems.Size = new System.Drawing.Size(190, 160);
+            this.lvwItems.Size = new System.Drawing.Size(190, 190);
             this.lvwItems.TabIndex = 1;
             this.lvwItems.UseCompatibleStateImageBehavior = false;
             this.lvwItems.View = System.Windows.Forms.View.List;
@@ -80,13 +81,12 @@
             this.btnLocate.UseVisualStyleBackColor = true;
             this.btnLocate.MouseDown += new System.Windows.Forms.MouseEventHandler(this.btnLocate_MouseDown);
             this.btnLocate.MouseUp += new System.Windows.Forms.MouseEventHandler(this.btnLocate_MouseUp);
-            //this.btnLocate.Click += new System.EventHandler(this.btnLocate_Click);
             // 
             // InspectionTool
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(200, 200);
+            this.ClientSize = new System.Drawing.Size(200, 230);
             this.Controls.Add(this.btnLocate);
             this.Controls.Add(this.btnClose);
             this.Controls.Add(this.lvwItems);
