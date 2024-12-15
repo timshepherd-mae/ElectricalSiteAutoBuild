@@ -303,11 +303,11 @@ namespace ElectricalSiteAutoBuild
                     mlStyle.StartAngle = 3.14159 * 0.5;
                     mlStyle.EndAngle = 3.14159 * 0.5;
 
-                    element = new MlineStyleElement(+0.25, R, acDb.ByLayerLinetype);
+                    element = new MlineStyleElement(+0.15, R, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
                     element = new MlineStyleElement(+0.00, Y, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
-                    element = new MlineStyleElement(-0.25, B, acDb.ByLayerLinetype);
+                    element = new MlineStyleElement(-0.15, B, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
 
                 }
@@ -323,11 +323,11 @@ namespace ElectricalSiteAutoBuild
                     mlStyle.StartAngle = 3.14159 * 0.5;
                     mlStyle.EndAngle = 3.14159 * 0.5;
 
-                    element = new MlineStyleElement(+0.25, B, acDb.ByLayerLinetype);
+                    element = new MlineStyleElement(+0.15, B, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
                     element = new MlineStyleElement(+0.00, Y, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
-                    element = new MlineStyleElement(-0.25, R, acDb.ByLayerLinetype);
+                    element = new MlineStyleElement(-0.15, R, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
 
                 }
@@ -343,11 +343,11 @@ namespace ElectricalSiteAutoBuild
                     mlStyle.StartAngle = 3.14159 * 0.5;
                     mlStyle.EndAngle = 3.14159 * 0.5;
 
-                    element = new MlineStyleElement(+0.25, R, acDb.ByLayerLinetype);
+                    element = new MlineStyleElement(+0.15, R, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
                     element = new MlineStyleElement(+0.00, B, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
-                    element = new MlineStyleElement(-0.25, Y, acDb.ByLayerLinetype);
+                    element = new MlineStyleElement(-0.15, Y, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
 
                 }
@@ -363,11 +363,11 @@ namespace ElectricalSiteAutoBuild
                     mlStyle.StartAngle = 3.14159 * 0.5;
                     mlStyle.EndAngle = 3.14159 * 0.5;
 
-                    element = new MlineStyleElement(+0.25, B, acDb.ByLayerLinetype);
+                    element = new MlineStyleElement(+0.15, B, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
                     element = new MlineStyleElement(+0.00, R, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
-                    element = new MlineStyleElement(-0.25, Y, acDb.ByLayerLinetype);
+                    element = new MlineStyleElement(-0.15, Y, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
 
                 }
@@ -383,11 +383,11 @@ namespace ElectricalSiteAutoBuild
                     mlStyle.StartAngle = 3.14159 * 0.5;
                     mlStyle.EndAngle = 3.14159 * 0.5;
 
-                    element = new MlineStyleElement(+0.25, Y, acDb.ByLayerLinetype);
+                    element = new MlineStyleElement(+0.15, Y, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
                     element = new MlineStyleElement(+0.00, R, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
-                    element = new MlineStyleElement(-0.25, B, acDb.ByLayerLinetype);
+                    element = new MlineStyleElement(-0.15, B, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
 
                 }
@@ -403,14 +403,63 @@ namespace ElectricalSiteAutoBuild
                     mlStyle.StartAngle = 3.14159 * 0.5;
                     mlStyle.EndAngle = 3.14159 * 0.5;
 
-                    element = new MlineStyleElement(+0.25, Y, acDb.ByLayerLinetype);
+                    element = new MlineStyleElement(+0.15, Y, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
                     element = new MlineStyleElement(+0.00, B, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
-                    element = new MlineStyleElement(-0.25, R, acDb.ByLayerLinetype);
+                    element = new MlineStyleElement(-0.15, R, acDb.ByLayerLinetype);
                     mlStyle.Elements.Add(element, true);
 
                 }
+                if (!mlDict.Contains("esabR"))
+                {
+                    mlDict.UpgradeOpen();
+
+                    mlStyle = new MlineStyle();
+                    mlDict.SetAt("esabR", mlStyle);
+                    tr.AddNewlyCreatedDBObject(mlStyle, true);
+
+                    mlStyle.Name = "esabR";
+                    mlStyle.StartAngle = 3.14159 * 0.5;
+                    mlStyle.EndAngle = 3.14159 * 0.5;
+
+                    element = new MlineStyleElement(+0.00, R, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+
+                }
+                if (!mlDict.Contains("esabY"))
+                {
+                    mlDict.UpgradeOpen();
+
+                    mlStyle = new MlineStyle();
+                    mlDict.SetAt("esabY", mlStyle);
+                    tr.AddNewlyCreatedDBObject(mlStyle, true);
+
+                    mlStyle.Name = "esabY";
+                    mlStyle.StartAngle = 3.14159 * 0.5;
+                    mlStyle.EndAngle = 3.14159 * 0.5;
+
+                    element = new MlineStyleElement(+0.00, Y, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+
+                }
+                if (!mlDict.Contains("esabB"))
+                {
+                    mlDict.UpgradeOpen();
+
+                    mlStyle = new MlineStyle();
+                    mlDict.SetAt("esabB", mlStyle);
+                    tr.AddNewlyCreatedDBObject(mlStyle, true);
+
+                    mlStyle.Name = "esabB";
+                    mlStyle.StartAngle = 3.14159 * 0.5;
+                    mlStyle.EndAngle = 3.14159 * 0.5;
+
+                    element = new MlineStyleElement(+0.00, B, acDb.ByLayerLinetype);
+                    mlStyle.Elements.Add(element, true);
+
+                }
+
 
                 tr.Commit();
             }
@@ -543,6 +592,7 @@ namespace ElectricalSiteAutoBuild
 
             return mkrid;
         }
+
 
     }
 }

@@ -243,7 +243,7 @@ namespace ElectricalSiteAutoBuild
 
     public enum EsabTerminatorType
     {
-        SGT, CSE, GIS, OHC, NUL, PST, LinkTo
+        SGT, CSE, GIS, OHC, NUL, POST, LinkTo
     }
 
     public enum EsabJunctionType

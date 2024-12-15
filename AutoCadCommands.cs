@@ -88,6 +88,7 @@ namespace ElectricalSiteAutoBuild
             //
 
             Document acDoc = Application.DocumentManager.MdiActiveDocument;
+            Database acDb = acDoc.Database;
             Editor acEd = acDoc.Editor;
 
             EditorMethods ed = new EditorMethods();
@@ -100,42 +101,62 @@ namespace ElectricalSiteAutoBuild
             if (per.Status != PromptStatus.OK)
                 return;
 
-            using (Transaction tr = acDoc.TransactionManager.StartTransaction())
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
             {
-                Polyline pline = (Polyline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
+                Polyline basePline = (Polyline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
 
-                pline.Highlight();
+                basePline.Highlight();
                 acEd.UpdateScreen();
 
                 // get route instance
                 //
                 EsabRoute route = new EsabRoute();
 
-                // editor prompts for property definition
-                //
-                route.id = pline.ObjectId;
                 route.rating = (EsabRating)ed.GetEnumFromKeywords(typeof(EsabRating), "Rating");
                 route.phase = (EsabPhaseType)ed.GetEnumFromKeywords(typeof(EsabPhaseType), "Phase");
                 if (route.phase == EsabPhaseType.ThreePhase) route.phasesep = ed.GetInt("Phase Separation Distance");
-                route.phasecol = (EsabPhaseColour)ed.GetEnumFromKeywords(typeof(EsabPhaseColour), "Phase Colour");
+
+                ed.RedDiamond(basePline.GetPoint2dAt(0), 0.2);
+                route.phasecol = (EsabPhaseColour)ed.GetEnumFromKeywords(typeof(EsabPhaseColour), "Phase Colour (left to right) starting at diamond");
+                acEd.Regen();
+
                 route.defaultConductorType = (EsabConductorType)ed.GetEnumFromKeywords(typeof(EsabConductorType), "Default Conductor");
+
+
+                // convert pline to mline
+                //
+                DBDictionary mlDict = (DBDictionary)tr.GetObject(acDb.MLStyleDictionaryId, OpenMode.ForRead);
+                Mline routeLine = new Mline()
+                {
+                    Normal = basePline.Normal,
+                    Style = mlDict.GetAt("esab" + Enum.GetName(typeof(EsabPhaseColour), route.phasecol)),
+                    Scale = 1,
+                    Justification = MlineJustification.Zero,
+                    Layer = "_Esab_Routes"
+                };
+                
+                for (int i = 0; i < basePline.NumberOfVertices; i++)
+                {
+                    routeLine.AppendSegment(basePline.GetPoint3dAt(i));
+                }
+                
+                BlockTableRecord btr = (BlockTableRecord)tr.GetObject(acDb.CurrentSpaceId, OpenMode.ForWrite);
+                btr.AppendEntity(routeLine);
+                tr.AddNewlyCreatedDBObject(routeLine, true);
 
                 // one feature id per vertex
                 //
-                for (int i = 0; i < pline.NumberOfVertices; i++)
+                for (int i = 0; i < routeLine.NumberOfVertices; i++)
                 {
-                    route.featureIds.Add(pline.ObjectId);
+                    route.featureIds.Add(routeLine.ObjectId);
                 }
 
+                route.id = routeLine.ObjectId;
+                tr.GetObject(route.id, OpenMode.ForWrite);
+                route.ToXdictionary(routeLine);
 
-
-                route.ToXdictionary(pline);
-
-                pline.UpgradeOpen();
-                pline.Layer = "_Esab_Routes";
-                pline.Linetype = "ByLayer";
-
-                pline.Unhighlight();
+                basePline.UpgradeOpen();
+                basePline.Erase();
                 acEd.Regen();
 
                 tr.Commit();
@@ -157,15 +178,15 @@ namespace ElectricalSiteAutoBuild
             EditorMethods ed = new EditorMethods();
             GeometryMethods gm = new GeometryMethods();
 
-            PromptEntityOptions peo = new PromptEntityOptions("Select LW Polyline: ");
-            peo.SetRejectMessage("\nOnly LW Poly entities allowed: ");
-            peo.AddAllowedClass(typeof(Polyline), true);
+            PromptEntityOptions peo = new PromptEntityOptions("Select Route Line: ");
+            peo.SetRejectMessage("\nOnly MLine entities allowed: ");
+            peo.AddAllowedClass(typeof(Mline), true);
             PromptEntityResult per = acEd.GetEntity(peo);
 
             if (per.Status != PromptStatus.OK)
                 return;
 
-            Polyline pline;
+            Mline mline;
             ResultBuffer rb;
             Extents3d ext;
             bool hasFeature;
@@ -179,8 +200,8 @@ namespace ElectricalSiteAutoBuild
 
             using (Transaction tr = acDb.TransactionManager.StartTransaction())
             {
-                pline = (Polyline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
-                rb = pline.GetXDictionaryXrecordData(Constants.XappName);
+                mline = (Mline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
+                rb = mline.GetXDictionaryXrecordData(Constants.XappName);
                 var data = rb.AsArray();
                 EsabXdType type = (EsabXdType)Enum.ToObject(typeof(EsabXdType), data[1].Value);
 
@@ -190,9 +211,9 @@ namespace ElectricalSiteAutoBuild
                     return;
                 }
 
-                ext = pline.GeometricExtents;
+                ext = mline.GeometricExtents;
 
-                route.FromXdictionary(pline);
+                route.FromXdictionary(mline);
 
                 acEd.SetCurrentView(ed.ZoomEntity(acEd, ext, 1.4));
 
@@ -201,7 +222,7 @@ namespace ElectricalSiteAutoBuild
 
             if (rb != null)
             {
-                int vCount = pline.NumberOfVertices;
+                int vCount = mline.NumberOfVertices;
 
                 // cycle through polyline vertices
                 //
@@ -209,8 +230,9 @@ namespace ElectricalSiteAutoBuild
                 {
                     // focus on current vertex
                     //
-                    Point2d vPnt2 = pline.GetPoint2dAt(i);
-                    Point3d vPnt3 = pline.GetPoint3dAt(i);
+                    
+                    Point2d vPnt2 = (Point2d)new Point2d(mline.VertexAt(i).X, mline.VertexAt(i).Y);
+                    Point3d vPnt3 = mline.VertexAt(i);
 
                     // notify feature at current vertex
                     //
@@ -267,11 +289,11 @@ namespace ElectricalSiteAutoBuild
                                         //
                                         if (i == 0)
                                         {
-                                            terminator.routeA = pline.ObjectId;
+                                            terminator.routeA = mline.ObjectId;
                                         }
                                         else
                                         {
-                                            terminator.routeB = pline.ObjectId;
+                                            terminator.routeB = mline.ObjectId;
                                         }
 
                                         mkr.UpgradeOpen();
@@ -288,8 +310,8 @@ namespace ElectricalSiteAutoBuild
                                     {
                                         id = mkrid,
                                         type = EsabXdType.Terminator,
-                                        routeA = pline.ObjectId,
-                                        routeB = pline.ObjectId,
+                                        routeA = mline.ObjectId,
+                                        routeB = mline.ObjectId,
                                         terminatortype = tm
                                     };
 
@@ -333,11 +355,11 @@ namespace ElectricalSiteAutoBuild
                                         //
                                         if (i == 0 || i == vCount - 1)
                                         {
-                                            junction.routebranch = pline.ObjectId;
+                                            junction.routebranch = mline.ObjectId;
                                         }
                                         else
                                         {
-                                            junction.routemain = pline.ObjectId;
+                                            junction.routemain = mline.ObjectId;
                                         }
 
                                         mkr.UpgradeOpen();
@@ -354,8 +376,8 @@ namespace ElectricalSiteAutoBuild
                                     {
                                         id = mkrid,
                                         type = EsabXdType.Junction,
-                                        routemain = pline.ObjectId,
-                                        routebranch = pline.ObjectId,
+                                        routemain = mline.ObjectId,
+                                        routebranch = mline.ObjectId,
                                         junctiontype = jn
                                     };
 
@@ -379,7 +401,7 @@ namespace ElectricalSiteAutoBuild
                                 {
                                     id = mkrid,
                                     type = EsabXdType.Feature,
-                                    parentId = pline.ObjectId,
+                                    parentId = mline.ObjectId,
                                     parentVertex = i,
                                     featureType = ft
                                 };
