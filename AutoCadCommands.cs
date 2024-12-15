@@ -15,11 +15,14 @@ namespace ElectricalSiteAutoBuild
 
         #region TestCommands
 
-        [CommandMethod("route2xd")]
-        public void Route2xd()
+        [CommandMethod("MLTEST01")]
+        public void mltest01()
         {
             Document acDoc = Application.DocumentManager.MdiActiveDocument;
+            Database acDb = acDoc.Database;
             Editor acEd = acDoc.Editor;
+
+            EditorMethods ed = new EditorMethods();
 
             PromptEntityOptions peo = new PromptEntityOptions("Select LW Polyline: ");
             peo.SetRejectMessage("\nOnly LW Poly entities allowed: ");
@@ -29,136 +32,53 @@ namespace ElectricalSiteAutoBuild
             if (per.Status != PromptStatus.OK)
                 return;
 
-            using (Transaction tr = acDoc.TransactionManager.StartTransaction())
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
             {
                 Polyline pline = (Polyline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
 
-                EsabRoute route = new EsabRoute()
+                DBDictionary mlDict = (DBDictionary)tr.GetObject(acDb.MLStyleDictionaryId, OpenMode.ForRead);
+
+
+
+                Mline mline = new Mline();
+                mline.Normal = pline.Normal;
+                mline.Style = mlDict.GetAt("esabRYB");
+                mline.Scale = 1;
+                mline.Justification = MlineJustification.Zero;
+                mline.Layer = "_Esab_Routes";
+
+                for (int i = 0; i < pline.NumberOfVertices; i++)
                 {
-                    id = pline.ObjectId,
-                    rating = EsabRating.kv400,
-                    phase = PhaseType.ThreePhase,
-                    endType1 = EsabTerminatorType.CSE,
-                    endType2 = EsabTerminatorType.SGT,
-                    featureIds = new ObjectIdCollection()
-                };
-                route.featureIds.Add(pline.ObjectId);
-                route.featureIds.Add(pline.ObjectId);
-
-                route.ToXdictionary(pline);
-
-                tr.Commit();               
-            }
-        }
-
-        [CommandMethod("xd2route")]
-        public void Xd2route()
-        {
-            Document acDoc = Application.DocumentManager.MdiActiveDocument;
-            Editor acEd = acDoc.Editor;
-
-            PromptEntityOptions peo = new PromptEntityOptions("Select LW Polyline: ");
-            peo.SetRejectMessage("\nOnly LW Poly entities allowed: ");
-            peo.AddAllowedClass(typeof(Polyline), true);
-            PromptEntityResult per = acEd.GetEntity(peo);
-
-            if (per.Status != PromptStatus.OK)
-                return;
-
-            using (Transaction tr = acDoc.TransactionManager.StartTransaction())
-            {
-                Polyline pline = (Polyline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
-
-                EsabRoute route = new EsabRoute();
-                route.FromXdictionary(pline);
-
-                acEd.WriteMessage("\n" + route.id.ToString());
-                acEd.WriteMessage("\n" + Enum.GetName(typeof(xdType), route.type));
-                acEd.WriteMessage("\n" + Enum.GetName(typeof(EsabRating), route.rating));
-                acEd.WriteMessage("\n" + Enum.GetName(typeof(PhaseType), route.phase));
-                acEd.WriteMessage("\n" + Enum.GetName(typeof(PhaseColour), route.phasecol));
-                acEd.WriteMessage("\n" + Enum.GetName(typeof(EsabTerminatorType), route.endType1));
-                acEd.WriteMessage("\n" + Enum.GetName(typeof(EsabTerminatorType), route.endType2));
-                foreach (ObjectId objid in route.featureIds)
-                {
-                    acEd.WriteMessage("\n" + objid.ToString());
+                    mline.AppendSegment(pline.GetPoint3dAt(i));
                 }
 
-                tr.Commit();
-            }
+                BlockTableRecord btr = (BlockTableRecord)tr.GetObject(acDb.CurrentSpaceId, OpenMode.ForWrite);
+                btr.AppendEntity(mline);
+                tr.AddNewlyCreatedDBObject(mline, true);
 
-        }
+                //DBObject dbo = (DBObject)tr.GetObject(pline.ObjectId, OpenMode.ForWrite);
+                //dbo.Erase();
 
-        [CommandMethod("feature2xd")]
-        public void Feature2xd()
-        {
-            Document acDoc = Application.DocumentManager.MdiActiveDocument;
-            Editor acEd = acDoc.Editor;
+                pline.UpgradeOpen();
+                pline.Erase();
+                
 
-            PromptEntityOptions peo = new PromptEntityOptions("Select object for feature attachment: ");
-            PromptEntityResult per = acEd.GetEntity(peo);
-
-            if (per.Status != PromptStatus.OK)
-                return;
-
-            using (Transaction tr = acDoc.TransactionManager.StartTransaction())
-            {
-                Entity ent = (Entity)tr.GetObject(per.ObjectId, OpenMode.ForRead);
-
-                EsabFeature ef = new EsabFeature()
-                {
-                    id = ent.ObjectId,
-                    parentId = ent.ObjectId,
-                    parentVertex = 0,
-                    featureType = EsabFeatureType.PI
-                };
-
-                ef.ToXdictionary(ent);
 
                 tr.Commit();
+                
 
-            }
-
-        }
-
-        [CommandMethod("xd2feature")]
-        public void Xd2feature()
-        {
-            Document acDoc = Application.DocumentManager.MdiActiveDocument;
-            Editor acEd = acDoc.Editor;
-
-            PromptEntityOptions peo = new PromptEntityOptions("Select object for feature inquiry: ");
-            PromptEntityResult per = acEd.GetEntity(peo);
-
-            if (per.Status != PromptStatus.OK)
-                return;
-
-            using (Transaction tr = acDoc.TransactionManager.StartTransaction())
-            {
-                Entity ent = (Entity)tr.GetObject(per.ObjectId, OpenMode.ForRead);
-
-                EsabFeature ef = new EsabFeature();
-                ef.FromXdictionary(ent);
-
-                acEd.WriteMessage("\n" + ef.id.ToString());
-                acEd.WriteMessage("\n" + ef.parentId.ToString());
-                acEd.WriteMessage("\n" + ef.parentVertex.ToString());
-                acEd.WriteMessage("\n" + Enum.GetName(typeof(EsabFeatureType), ef.featureType));
-
-                tr.Commit();
             }
         }
 
-        #endregion TestCommands
+            #endregion TestCommands
 
 
-        [CommandMethod("ESABINIT")]
+            [CommandMethod("ESABINIT")]
         public void EsabInitialise()
         {
             GeometryMethods ge = new GeometryMethods();
             ge.InitialiseGeometry();
         }
-
 
         [CommandMethod("EsabAssignRouteProps")]
         public void AssignRouteProperties()
@@ -168,6 +88,7 @@ namespace ElectricalSiteAutoBuild
             //
 
             Document acDoc = Application.DocumentManager.MdiActiveDocument;
+            Database acDb = acDoc.Database;
             Editor acEd = acDoc.Editor;
 
             EditorMethods ed = new EditorMethods();
@@ -180,41 +101,62 @@ namespace ElectricalSiteAutoBuild
             if (per.Status != PromptStatus.OK)
                 return;
 
-            using (Transaction tr = acDoc.TransactionManager.StartTransaction())
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
             {
-                Polyline pline = (Polyline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
+                Polyline basePline = (Polyline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
 
-                pline.Highlight();
+                basePline.Highlight();
                 acEd.UpdateScreen();
 
                 // get route instance
                 //
                 EsabRoute route = new EsabRoute();
 
-                // editor prompts for property definition
-                //
-                route.id = pline.ObjectId;
-                route.rating = ed.GetRatingFromKeywords();
-                route.phase = ed.GetPhaseFromKeywords();
+                route.rating = (EsabRating)ed.GetEnumFromKeywords(typeof(EsabRating), "Rating");
+                route.phase = (EsabPhaseType)ed.GetEnumFromKeywords(typeof(EsabPhaseType), "Phase");
+                if (route.phase == EsabPhaseType.ThreePhase) route.phasesep = ed.GetInt("Phase Separation Distance");
 
-                route.phasecol = ed.GetPhaseColourFromKeywords();
-                route.endType1 = ed.GetEndConnectorFromKeywords("End 1");
-                route.endType2 = ed.GetEndConnectorFromKeywords("End 2");
+                ed.RedDiamond(basePline.GetPoint2dAt(0), 0.2);
+                route.phasecol = (EsabPhaseColour)ed.GetEnumFromKeywords(typeof(EsabPhaseColour), "Phase Colour (left to right) starting at diamond");
+                acEd.Regen();
+
+                route.defaultConductorType = (EsabConductorType)ed.GetEnumFromKeywords(typeof(EsabConductorType), "Default Conductor");
+
+
+                // convert pline to mline
+                //
+                DBDictionary mlDict = (DBDictionary)tr.GetObject(acDb.MLStyleDictionaryId, OpenMode.ForRead);
+                Mline routeLine = new Mline()
+                {
+                    Normal = basePline.Normal,
+                    Style = mlDict.GetAt("esab" + Enum.GetName(typeof(EsabPhaseColour), route.phasecol)),
+                    Scale = 1,
+                    Justification = MlineJustification.Zero,
+                    Layer = "_Esab_Routes"
+                };
+                
+                for (int i = 0; i < basePline.NumberOfVertices; i++)
+                {
+                    routeLine.AppendSegment(basePline.GetPoint3dAt(i));
+                }
+                
+                BlockTableRecord btr = (BlockTableRecord)tr.GetObject(acDb.CurrentSpaceId, OpenMode.ForWrite);
+                btr.AppendEntity(routeLine);
+                tr.AddNewlyCreatedDBObject(routeLine, true);
 
                 // one feature id per vertex
                 //
-                for (int i = 0; i < pline.NumberOfVertices; i++)
+                for (int i = 0; i < routeLine.NumberOfVertices; i++)
                 {
-                    route.featureIds.Add(pline.ObjectId);
+                    route.featureIds.Add(routeLine.ObjectId);
                 }
 
-                route.ToXdictionary(pline);
+                route.id = routeLine.ObjectId;
+                tr.GetObject(route.id, OpenMode.ForWrite);
+                route.ToXdictionary(routeLine);
 
-                pline.UpgradeOpen();
-                pline.Layer = "_Esab_Routes";
-                pline.Linetype = "ByLayer";
-
-                pline.Unhighlight();
+                basePline.UpgradeOpen();
+                basePline.Erase();
                 acEd.Regen();
 
                 tr.Commit();
@@ -223,7 +165,6 @@ namespace ElectricalSiteAutoBuild
 
         }
 
-
         [CommandMethod("EsabPopulateRoute")]
         public void PopulateRoute()
         {
@@ -231,44 +172,48 @@ namespace ElectricalSiteAutoBuild
             // the vertices with features
             //
             Document acDoc = Application.DocumentManager.MdiActiveDocument;
+            Database acDb = acDoc.Database;
             Editor acEd = acDoc.Editor;
 
             EditorMethods ed = new EditorMethods();
             GeometryMethods gm = new GeometryMethods();
 
-            PromptEntityOptions peo = new PromptEntityOptions("Select LW Polyline: ");
-            peo.SetRejectMessage("\nOnly LW Poly entities allowed: ");
-            peo.AddAllowedClass(typeof(Polyline), true);
+            PromptEntityOptions peo = new PromptEntityOptions("Select Route Line: ");
+            peo.SetRejectMessage("\nOnly MLine entities allowed: ");
+            peo.AddAllowedClass(typeof(Mline), true);
             PromptEntityResult per = acEd.GetEntity(peo);
 
             if (per.Status != PromptStatus.OK)
                 return;
 
-            Polyline pline;
+            Mline mline;
             ResultBuffer rb;
             Extents3d ext;
             bool hasFeature;
-            DBObject mkr;
+            Entity mkr;
             ObjectId mkrid;
             EsabRoute route = new EsabRoute();
             EsabFeature feature;
+            EsabFeatureType ft = EsabFeatureType.NUL;
+            EsabTerminator terminator;
+            EsabJunction junction;
 
-            using (Transaction tr = acDoc.TransactionManager.StartTransaction())
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
             {
-                pline = (Polyline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
-                rb = pline.GetXDictionaryXrecordData(Constants.XappName);
+                mline = (Mline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
+                rb = mline.GetXDictionaryXrecordData(Constants.XappName);
                 var data = rb.AsArray();
-                xdType type = (xdType)Enum.ToObject(typeof(xdType), data[1].Value);
+                EsabXdType type = (EsabXdType)Enum.ToObject(typeof(EsabXdType), data[1].Value);
 
-                if (type != xdType.Route)
+                if (type != EsabXdType.Route)
                 {
                     acEd.WriteMessage("\nSelection is not an ESAB Route entity\nExiting command\n");
                     return;
                 }
 
-                ext = pline.GeometricExtents;
+                ext = mline.GeometricExtents;
 
-                route.FromXdictionary(pline);
+                route.FromXdictionary(mline);
 
                 acEd.SetCurrentView(ed.ZoomEntity(acEd, ext, 1.4));
 
@@ -277,7 +222,7 @@ namespace ElectricalSiteAutoBuild
 
             if (rb != null)
             {
-                int vCount = pline.NumberOfVertices;
+                int vCount = mline.NumberOfVertices;
 
                 // cycle through polyline vertices
                 //
@@ -285,9 +230,9 @@ namespace ElectricalSiteAutoBuild
                 {
                     // focus on current vertex
                     //
-                    Point2d vPnt2 = pline.GetPoint2dAt(i);
-                    Point3d vPnt3 = pline.GetPoint3dAt(i);
-                    ed.RedDiamond(vPnt2, 0.2);
+                    
+                    Point2d vPnt2 = (Point2d)new Point2d(mline.VertexAt(i).X, mline.VertexAt(i).Y);
+                    Point3d vPnt3 = mline.VertexAt(i);
 
                     // notify feature at current vertex
                     //
@@ -300,33 +245,193 @@ namespace ElectricalSiteAutoBuild
                     }
                     else
                     {
-                        // vertex is empty
+                        // vertex is empty, create feature
                         //
-                        acEd.WriteMessage($"\nSelect feature for vertex {i}: ");
-                        EsabFeatureType ft = ed.GetFeatureFromKeywords("");
-
-                        mkrid = gm.CreateFeatureMarker(ft, 0.5, vPnt3);
-                        feature = new EsabFeature()
+                        ed.RedDiamond(vPnt2, 0.2);
+                        
+                        
+                        // exclude terminator feature type unless start or end vertex
+                        //
+                        if (i == 0 || i == vCount - 1)
                         {
-                            id = mkrid,
-                            type = xdType.Feature,
-                            parentId = pline.ObjectId,
-                            parentVertex = i,
-                            featureType = ft
-                        };
-
-                        // TODO feed feature objectIds back into route feature list
-
-                        using (Transaction tr = acDoc.TransactionManager.StartTransaction())
+                            ft = (EsabFeatureType)ed.GetEnumFromKeywords(typeof(EsabFeatureType), $"\nSelect feature for vertex {i}: ");
+                        }
+                        else
                         {
-                            mkr = (DBObject)tr.GetObject(mkrid, OpenMode.ForWrite);
-                            feature.ToXdictionary(mkr);
-                            tr.Commit();
+                            ft = (EsabFeatureType)ed.GetEnumFromKeywords(typeof(EsabFeatureType), $"\nSelect feature for vertex {i}: ", "Terminator");
                         }
 
-                        acEd.Regen();
-                    }
+                        switch (ft)
+                        {
+                            case EsabFeatureType.Terminator:
+
+                                EsabTerminatorType tm = (EsabTerminatorType)ed.GetEnumFromKeywords(typeof(EsabTerminatorType), "\nSelect termination type: ");
+
+                                // is terminator selection a LinkTo
+                                //
+                                if (tm == EsabTerminatorType.LinkTo)
+                                {
+                                    // select an existing terminator feature
+                                    //
+                                    mkrid = ObjectId.Null;
+                                    {
+                                        mkrid = ed.SelectExistingMarker(EsabXdType.Terminator);
+                                    }
+
+                                    using (Transaction tr = acDb.TransactionManager.StartTransaction())
+                                    {
+                                        mkr = (Entity)tr.GetObject(mkrid, OpenMode.ForRead);
+                                        terminator = new EsabTerminator();
+                                        terminator.FromXdictionary(mkr);
+
+                                        // if i is first, then this terminator node is already on RouteB, so assign RouteA
+                                        // if i is last, then this terminator node is already on RouteA, so assign RouteB
+                                        //
+                                        if (i == 0)
+                                        {
+                                            terminator.routeA = mline.ObjectId;
+                                        }
+                                        else
+                                        {
+                                            terminator.routeB = mline.ObjectId;
+                                        }
+
+                                        mkr.UpgradeOpen();
+                                        mkr.ColorIndex = 256;
+                                        terminator.ToXdictionary(mkr);
+                                        tr.Commit();
+                                    }
+
+                                }
+                                else
+                                {
+                                    mkrid = gm.CreateTerminatorMarker(tm, 0.5, vPnt3);
+                                    terminator = new EsabTerminator()
+                                    {
+                                        id = mkrid,
+                                        type = EsabXdType.Terminator,
+                                        routeA = mline.ObjectId,
+                                        routeB = mline.ObjectId,
+                                        terminatortype = tm
+                                    };
+
+                                    using (Transaction tr = acDb.TransactionManager.StartTransaction())
+                                    {
+                                        mkr = (Entity)tr.GetObject(mkrid, OpenMode.ForWrite);
+                                        terminator.ToXdictionary(mkr);
+                                        tr.Commit();
+                                    }
+
+                                    acEd.Regen();
+
+                                }
+
+                                break;
+
+                            case EsabFeatureType.Junction:
+
+                                EsabJunctionType jn = (EsabJunctionType)ed.GetEnumFromKeywords(typeof(EsabJunctionType), "\nSelect junction type: ");
+
+                                // is junction selection a LinkTo
+                                //
+                                if (jn == EsabJunctionType.LinkTo)
+                                {
+                                    // select an existing junction feature
+                                    //
+                                    mkrid = ObjectId.Null;
+                                    while (mkrid == ObjectId.Null)
+                                    {
+                                        mkrid = ed.SelectExistingMarker(EsabXdType.Junction);
+                                    }
+
+                                    using (Transaction tr = acDb.TransactionManager.StartTransaction())
+                                    {
+                                        mkr = (Entity)tr.GetObject(mkrid, OpenMode.ForRead);
+                                        junction = new EsabJunction();
+                                        junction.FromXdictionary(mkr);
+
+                                        // if i is 0 or last, then this junction node is on branch
+                                        // if i is mid, then this junction node is on main
+                                        //
+                                        if (i == 0 || i == vCount - 1)
+                                        {
+                                            junction.routebranch = mline.ObjectId;
+                                        }
+                                        else
+                                        {
+                                            junction.routemain = mline.ObjectId;
+                                        }
+
+                                        mkr.UpgradeOpen();
+                                        mkr.ColorIndex = 256;
+                                        junction.ToXdictionary(mkr);
+                                        tr.Commit();   
+
+                                    }
+                                }
+                                else
+                                {
+                                    mkrid = gm.CreateJunctionMarker(jn, 0.5, vPnt3);
+                                    junction = new EsabJunction()
+                                    {
+                                        id = mkrid,
+                                        type = EsabXdType.Junction,
+                                        routemain = mline.ObjectId,
+                                        routebranch = mline.ObjectId,
+                                        junctiontype = jn
+                                    };
+
+                                    using (Transaction tr = acDb.TransactionManager.StartTransaction())
+                                    {
+                                        mkr = (Entity)tr.GetObject(mkrid, OpenMode.ForWrite);
+                                        junction.ToXdictionary(mkr);
+                                        tr.Commit();
+                                    }
+
+                                    acEd.Regen();
+
+                                }
+
+                                break;  
+
+                            default:
+
+                                mkrid = gm.CreateFeatureMarker(ft, 0.5, vPnt3);
+                                feature = new EsabFeature()
+                                {
+                                    id = mkrid,
+                                    type = EsabXdType.Feature,
+                                    parentId = mline.ObjectId,
+                                    parentVertex = i,
+                                    featureType = ft
+                                };
+
+                                using (Transaction tr = acDb.TransactionManager.StartTransaction())
+                                {
+                                    mkr = (Entity)tr.GetObject(mkrid, OpenMode.ForWrite);
+                                    feature.ToXdictionary(mkr);
+                                    tr.Commit();
+                                }
+
+                                acEd.Regen();
+                                
+                            break;
+                        }
+
+                        route.featureIds[i] = mkrid;
+                        acEd.WriteMessage(mkrid.ToString());
                         
+                    }
+                    
+                        
+                }
+
+                using (Transaction tr = acDb.TransactionManager.StartTransaction())
+                {
+                    
+                    DBObject dbo = (DBObject)tr.GetObject(route.id, OpenMode.ForWrite);
+                    route.ToXdictionary(dbo);
+                    tr.Commit();
                 }
 
             }
@@ -341,13 +446,11 @@ namespace ElectricalSiteAutoBuild
         }
 
         [CommandMethod("EsabInspect")] 
-
         public void EsabInspect()
         {
             var iWindow = new InspectionTool();
             iWindow.Show();
         }
-
 
 
     }

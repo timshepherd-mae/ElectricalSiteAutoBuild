@@ -4,6 +4,7 @@ using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.Geometry;
+using System.Windows.Documents;
 
 
 
@@ -13,88 +14,83 @@ namespace ElectricalSiteAutoBuild
     {
         // autocad editor methods to reduce commandmethod code
         //
-        public double GetRealInput(string prompt)
+        public double GetDbl(string prompt)
         {
             Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
 
             PromptDoubleOptions pdo = new PromptDoubleOptions($"\n{prompt}: ");
             PromptDoubleResult pdr = acEd.GetDouble(pdo);
-            acEd.WriteMessage($"\n{pdr.Value.ToString()}\n");
+            acEd.WriteMessage($"\n{pdr.Value}\n");
             return pdr.Value;
         }
 
-        public EsabRating GetRatingFromKeywords()
+        public int GetInt(string prompt)
         {
             Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
 
-            PromptKeywordOptions pko = new PromptKeywordOptions("\nRating: ");
-            foreach (string s in Enum.GetNames(typeof(EsabRating)))
-            {
-                pko.Keywords.Add(s);
-            }
-
-            PromptResult kwd = acEd.GetKeywords(pko);
-            acEd.WriteMessage("\n" + kwd.StringResult + "\n");
-            return (EsabRating)Enum.Parse(typeof(EsabRating), kwd.StringResult);
+            PromptIntegerOptions pio = new PromptIntegerOptions($"\n{prompt}: ");
+            //PromptDoubleOptions pdo = new PromptDoubleOptions($"\n{prompt}: ");
+            PromptIntegerResult pir = acEd.GetInteger(pio);
+            acEd.WriteMessage($"\n{pir.Value}\n");
+            return pir.Value;
         }
 
-        public PhaseType GetPhaseFromKeywords()
+        public int GetEnumFromKeywords(Type e, string prompt, string ignore = "")
         {
             Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
 
-            PromptKeywordOptions pko = new PromptKeywordOptions("\nPhase: ");
-            foreach (string s in Enum.GetNames(typeof(PhaseType)))
+            PromptKeywordOptions pko = new PromptKeywordOptions($"\n{prompt}: ");
+            foreach (string s in Enum.GetNames(e) )
             {
-                pko.Keywords.Add(s);
+                if (!ignore.Contains(s))
+                    pko.Keywords.Add(s);
             }
-
+            
             PromptResult kwd = acEd.GetKeywords(pko);
+            
             acEd.WriteMessage("\n" + kwd.StringResult + "\n");
-            return (PhaseType)Enum.Parse(typeof(PhaseType), kwd.StringResult);
+            return (int)Enum.Parse(e, kwd.StringResult);
         }
 
-        public PhaseColour GetPhaseColourFromKeywords()
+        public ObjectId SelectExistingMarker(EsabXdType xdt)
         {
-            Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
+            Document acDoc = Application.DocumentManager.MdiActiveDocument;
+            Database acDb = acDoc.Database;
+            Editor acEd = acDoc.Editor;
 
-            PromptKeywordOptions pko = new PromptKeywordOptions("\nPhase Colour: ");
-            foreach (string s in Enum.GetNames(typeof(PhaseColour)))
+            PromptEntityOptions peo = new PromptEntityOptions("Select Existing Marker: ");
+            peo.SetRejectMessage("\nOnly BlockRef entities allowed: ");
+            peo.AddAllowedClass(typeof(BlockReference), true);
+            PromptEntityResult per = acEd.GetEntity(peo);
+
+            if (per.Status != PromptStatus.OK)
+                return ObjectId.Null;
+
+            ObjectId mkrid = ObjectId.Null;
+
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
             {
-                pko.Keywords.Add(s);
+                DBObject dbo = (DBObject)tr.GetObject(per.ObjectId, OpenMode.ForRead);
+                ResultBuffer rb = dbo.GetXDictionaryXrecordData(Constants.XappName);
+
+                // check for esab xdict data
+                //
+                if (rb == null)
+                    return ObjectId.Null;
+
+                var data = rb.AsArray();
+                
+                // check for xdtype == junction
+                //
+                if ((int)data[1].Value != (int)xdt)
+                    return ObjectId.Null;
+
+                mkrid = (ObjectId)data[0].Value;
+                tr.Commit();
             }
 
-            PromptResult kwd = acEd.GetKeywords(pko);
-            acEd.WriteMessage("\n" + kwd.StringResult + "\n");
-            return (PhaseColour)Enum.Parse(typeof(PhaseColour), kwd.StringResult);
-        }
-        public EsabTerminatorType GetEndConnectorFromKeywords(string prompt)
-        {
-            Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
+            return mkrid;
 
-            PromptKeywordOptions pko = new PromptKeywordOptions("\n" + prompt + ": ");
-            foreach (string s in Enum.GetNames(typeof(EsabTerminatorType)))
-            {
-                pko.Keywords.Add(s);
-            }
-
-            PromptResult kwd = acEd.GetKeywords(pko);
-            acEd.WriteMessage("\n" + kwd.StringResult + "\n");
-            return (EsabTerminatorType)Enum.Parse(typeof(EsabTerminatorType), kwd.StringResult);
-        }
-
-        public EsabFeatureType GetFeatureFromKeywords(string prompt)
-        {
-            Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
-
-            PromptKeywordOptions pko = new PromptKeywordOptions("\n" + prompt + ": ");
-            foreach (string s in Enum.GetNames(typeof(EsabFeatureType)))
-            {
-                pko.Keywords.Add(s);
-            }
-
-            PromptResult kwd = acEd.GetKeywords(pko);
-            acEd.WriteMessage("\n" + kwd.StringResult + "\n");
-            return (EsabFeatureType)Enum.Parse(typeof(EsabFeatureType), kwd.StringResult);
         }
 
         public ViewTableRecord ZoomEntity(Editor acEd, Extents3d ext, double zoomfactor)
@@ -133,7 +129,6 @@ namespace ElectricalSiteAutoBuild
             }
 
         }
-
 
     }
 }

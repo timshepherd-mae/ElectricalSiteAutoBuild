@@ -31,13 +31,14 @@
             this.btnSelect = new System.Windows.Forms.Button();
             this.lvwItems = new System.Windows.Forms.ListView();
             this.btnClose = new System.Windows.Forms.Button();
+            this.btnLocate = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnSelect
             // 
             this.btnSelect.Location = new System.Drawing.Point(5, 5);
             this.btnSelect.Name = "btnSelect";
-            this.btnSelect.Size = new System.Drawing.Size(75, 25);
+            this.btnSelect.Size = new System.Drawing.Size(50, 25);
             this.btnSelect.TabIndex = 0;
             this.btnSelect.Text = "select";
             this.btnSelect.UseVisualStyleBackColor = true;
@@ -45,10 +46,12 @@
             // 
             // lvwItems
             // 
+            this.lvwItems.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lvwItems.HideSelection = false;
-            this.lvwItems.Location = new System.Drawing.Point(5, 35);
+            this.lvwItems.Location = new System.Drawing.Point(5, 36);
+            this.lvwItems.MultiSelect = false;
             this.lvwItems.Name = "lvwItems";
-            this.lvwItems.Size = new System.Drawing.Size(190, 160);
+            this.lvwItems.Size = new System.Drawing.Size(190, 190);
             this.lvwItems.TabIndex = 1;
             this.lvwItems.UseCompatibleStateImageBehavior = false;
             this.lvwItems.View = System.Windows.Forms.View.List;
@@ -67,11 +70,24 @@
             this.btnClose.UseVisualStyleBackColor = false;
             this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
             // 
+            // btnLocate
+            // 
+            this.btnLocate.Location = new System.Drawing.Point(60, 5);
+            this.btnLocate.Name = "btnLocate";
+            this.btnLocate.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.btnLocate.Size = new System.Drawing.Size(50, 25);
+            this.btnLocate.TabIndex = 3;
+            this.btnLocate.Text = "locate";
+            this.btnLocate.UseVisualStyleBackColor = true;
+            this.btnLocate.MouseDown += new System.Windows.Forms.MouseEventHandler(this.btnLocate_MouseDown);
+            this.btnLocate.MouseUp += new System.Windows.Forms.MouseEventHandler(this.btnLocate_MouseUp);
+            // 
             // InspectionTool
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(200, 200);
+            this.ClientSize = new System.Drawing.Size(200, 230);
+            this.Controls.Add(this.btnLocate);
             this.Controls.Add(this.btnClose);
             this.Controls.Add(this.lvwItems);
             this.Controls.Add(this.btnSelect);
@@ -89,5 +105,6 @@
         private System.Windows.Forms.Button btnSelect;
         private System.Windows.Forms.ListView lvwItems;
         private System.Windows.Forms.Button btnClose;
+        private System.Windows.Forms.Button btnLocate;
     }
 }

@@ -16,14 +16,14 @@ namespace ElectricalSiteAutoBuild
         // define app name for extended dictionary content
         //
         public const string XappName = "ESAB";
-
+        public const bool ShowObjIds = true;
 
     }
 
     public class EsabFeature
     {
         public ObjectId id;
-        public xdType type = xdType.Feature;
+        public EsabXdType type = EsabXdType.Feature;
         public ObjectId parentId;
         public int parentVertex;
         public EsabFeatureType featureType;
@@ -55,7 +55,7 @@ namespace ElectricalSiteAutoBuild
             {
                 var data = rb.AsArray();
                 id = (ObjectId)data[0].Value;
-                type = (xdType)Enum.ToObject(typeof(xdType), data[1].Value);
+                type = (EsabXdType)Enum.ToObject(typeof(EsabXdType), data[1].Value);
                 parentId = (ObjectId)data[2].Value;
                 parentVertex = (int)data[3].Value;
                 featureType = (EsabFeatureType)Enum.ToObject(typeof(EsabFeatureType), data[4].Value);
@@ -69,13 +69,12 @@ namespace ElectricalSiteAutoBuild
     public class EsabRoute
     {
         public ObjectId id;
-        public xdType type = xdType.Route;
+        public EsabXdType type = EsabXdType.Route;
         public EsabRating rating;
-        public EsabTerminatorType endType1;
-        public EsabTerminatorType endType2;
-        public PhaseType phase;
-        public int phasesep;
-        public PhaseColour phasecol;
+        public EsabPhaseType phase;
+        public double phasesep = 0;
+        public EsabPhaseColour phasecol;
+        public EsabConductorType defaultConductorType;
         public ObjectIdCollection featureIds = new ObjectIdCollection();
 
         // constructors
@@ -89,17 +88,17 @@ namespace ElectricalSiteAutoBuild
             int tvCount = featureIds.Count + 7;
             TypedValue[] xdata = new TypedValue[tvCount];
 
-            xdata[0] = new TypedValue((int)DxfCode.SoftPointerId, id);  // route ent id
-            xdata[1] = new TypedValue((int)DxfCode.Int32, type);        // esab type
-            xdata[2] = new TypedValue((int)DxfCode.Int32, rating);      // kv value
-            xdata[3] = new TypedValue((int)DxfCode.Int32, phase);       // single/three phase
-            xdata[4] = new TypedValue((int)DxfCode.Int32, phasecol);    // phace color
-            xdata[5] = new TypedValue((int)DxfCode.Int32, endType1);
-            xdata[6] = new TypedValue((int)DxfCode.Int32, endType2);
-            
+            xdata[0] = new TypedValue((int)DxfCode.SoftPointerId, id);              // route ent id
+            xdata[1] = new TypedValue((int)DxfCode.Int32, type);                    // esab type
+            xdata[2] = new TypedValue((int)DxfCode.Int32, rating);                  // kv value
+            xdata[3] = new TypedValue((int)DxfCode.Int32, phase);                   // single/three phase
+            xdata[4] = new TypedValue((int)DxfCode.Real, phasesep);                // threephase seperation distance
+            xdata[5] = new TypedValue((int)DxfCode.Int32, phasecol);                // phase color
+            xdata[6] = new TypedValue((int)DxfCode.Int32, defaultConductorType);    // conductor
+
             for (int i = 0; i < featureIds.Count; i++)
             {
-                xdata[i + 7] = new TypedValue((int)DxfCode.SoftPointerId, id);
+                xdata[i + 7] = new TypedValue((int)DxfCode.SoftPointerId, featureIds[i]);
             }
 
             dbo.SetXDictionaryXrecordData(Constants.XappName, xdata);
@@ -114,12 +113,13 @@ namespace ElectricalSiteAutoBuild
             {
                 var data = rb.AsArray();
                 id = (ObjectId)data[0].Value;
-                type = (xdType)Enum.ToObject(typeof(xdType), data[1].Value);
+                type = (EsabXdType)Enum.ToObject(typeof(EsabXdType), data[1].Value);
                 rating = (EsabRating)Enum.ToObject(typeof(EsabRating), data[2].Value);
-                phase = (PhaseType)Enum.ToObject(typeof(PhaseType), data[3].Value);
-                phasecol = (PhaseColour)Enum.ToObject(typeof(PhaseColour), data[4].Value);
-                endType1 = (EsabTerminatorType)Enum.ToObject(typeof(EsabTerminatorType), data[5].Value);
-                endType2 = (EsabTerminatorType)Enum.ToObject(typeof(EsabTerminatorType), data[6].Value);
+                phase = (EsabPhaseType)Enum.ToObject(typeof(EsabPhaseType), data[3].Value);
+                phasesep = (double)data[4].Value;
+                phasecol = (EsabPhaseColour)Enum.ToObject(typeof(EsabPhaseColour), data[5].Value);
+                defaultConductorType = (EsabConductorType)Enum.ToObject(typeof(EsabConductorType), data[6].Value);
+
                 for (int i = 7; i < data.Length; i++)
                 {
                         featureIds.Add((ObjectId)data[i].Value);
@@ -135,10 +135,99 @@ namespace ElectricalSiteAutoBuild
 
     public class EsabConductor
     {
-        EsabTerminatorType connectionType;
+        
     }
 
+    public class EsabTerminator
+    {
+        public ObjectId id;
+        public EsabXdType type = EsabXdType.Terminator;
+        public ObjectId routeA;
+        public ObjectId routeB;
+        public EsabTerminatorType terminatortype;
 
+        // constructors
+        //
+
+        #region transformers
+        // xdict to class transformers
+
+        public void ToXdictionary(DBObject dbo)
+        {
+            TypedValue[] xdata = new TypedValue[5];
+
+            xdata[0] = new TypedValue((int)DxfCode.SoftPointerId, id);
+            xdata[1] = new TypedValue((int)DxfCode.Int32, type);
+            xdata[2] = new TypedValue((int)DxfCode.SoftPointerId, routeA);
+            xdata[3] = new TypedValue((int)DxfCode.SoftPointerId, routeB);
+            xdata[4] = new TypedValue((int)DxfCode.Int32, terminatortype);
+
+            dbo.SetXDictionaryXrecordData(Constants.XappName, xdata);
+        }
+
+        public void FromXdictionary(DBObject dbo)
+        {
+            ResultBuffer rb = dbo.GetXDictionaryXrecordData(Constants.XappName);
+
+            if (rb != null)
+            {
+                var data = rb.AsArray();
+                id = (ObjectId)data[0].Value;
+                type = (EsabXdType)Enum.ToObject(typeof(EsabXdType), data[1].Value);
+                routeA = (ObjectId)data[2].Value;
+                routeB = (ObjectId)data[3].Value; 
+                terminatortype = (EsabTerminatorType)Enum.ToObject(typeof(EsabTerminatorType), data[4].Value);
+
+            }
+        }
+        #endregion transformers
+
+    }
+
+    public class EsabJunction
+    {
+        public ObjectId id;
+        public EsabXdType type = EsabXdType.Junction;
+        public ObjectId routemain;
+        public ObjectId routebranch;
+        public EsabJunctionType junctiontype;
+
+        // constructors
+        //
+
+        #region transformers
+        // xdict to class transformers
+
+        public void ToXdictionary(DBObject dbo)
+        {
+            TypedValue[] xdata = new TypedValue[5];
+
+            xdata[0] = new TypedValue((int)DxfCode.SoftPointerId, id);
+            xdata[1] = new TypedValue((int)DxfCode.Int32, type);
+            xdata[2] = new TypedValue((int)DxfCode.SoftPointerId, routemain);
+            xdata[3] = new TypedValue((int)DxfCode.SoftPointerId, routebranch);
+            xdata[4] = new TypedValue((int)DxfCode.Int32, junctiontype);
+
+            dbo.SetXDictionaryXrecordData(Constants.XappName, xdata);
+        }
+
+        public void FromXdictionary(DBObject dbo)
+        {
+            ResultBuffer rb = dbo.GetXDictionaryXrecordData(Constants.XappName);
+
+            if (rb != null)
+            {
+                var data = rb.AsArray();
+                id = (ObjectId)data[0].Value;
+                type = (EsabXdType)Enum.ToObject(typeof(EsabXdType), data[1].Value);
+                routemain = (ObjectId)data[2].Value;
+                routebranch = (ObjectId)data[3].Value;
+                junctiontype = (EsabJunctionType)Enum.ToObject(typeof(EsabJunctionType), data[4].Value);
+            }
+        }
+        #endregion transformers
+
+    }
 
     #region Enumerators
 
@@ -149,31 +238,37 @@ namespace ElectricalSiteAutoBuild
 
     public enum EsabFeatureType
     {
-        PI, ESW, CVT, SA, NUL
+        PI, RI, ESW, CVT, SA, NUL, Terminator, Junction
     }
 
     public enum EsabTerminatorType
     {
-        SGT, CSE, GIS, OHC, JNC, NUL
+        SGT, CSE, GIS, OHC, NUL, POST, LinkTo
     }
-    public enum ConductorType
+
+    public enum EsabJunctionType
+    {
+        POST, FORK, LinkTo
+    }
+
+    public enum EsabConductorType
     {
         GIB, Busbar, Cable
     }
  
-    public enum PhaseType
+    public enum EsabPhaseType
     {
         Single, ThreePhase
     }
 
-    public enum PhaseColour
+    public enum EsabPhaseColour
     {
-        Red, Yellow, Blue, RYB, BYR
+        R, Y, B, RYB, BYR, RBY, BRY, YRB, YBR
     }
 
-    public enum xdType
+    public enum EsabXdType
     {
-        Route, Feature, Conductor, Connector
+        Route, Feature, Conductor, Terminator, Junction
     } 
 
     #endregion Enumerators
