@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
+using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 
@@ -19,6 +20,8 @@ namespace ElectricalSiteAutoBuild
         public const bool ShowObjIds = true;
 
     }
+
+    #region framework classes
 
     public class EsabFeature
     {
@@ -269,8 +272,24 @@ namespace ElectricalSiteAutoBuild
     public enum EsabXdType
     {
         Route, Feature, Conductor, Terminator, Junction
-    } 
+    }
 
     #endregion Enumerators
+
+    #endregion framework classes
+
+    #region modelclasses
+
+    public class EsabModelBase
+    {
+        public DBObject model0;
+        public Point3d[] attachPoints;
+
+
+    }
+
+
+    #endregion model classes
+
 
 }

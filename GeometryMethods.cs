@@ -97,6 +97,23 @@ namespace ElectricalSiteAutoBuild
                     }
                 }
 
+                if (!lt.Has("_Esab_Model"))
+                {
+                    using (LayerTableRecord lyr = new LayerTableRecord())
+                    {
+                        lyr.Name = "_Esab_Model";
+                        Color lcol = new Color();
+                        lcol = Color.FromColorIndex(ColorMethod.ByAci, 7);
+                        lyr.Color = lcol;
+                        lyr.LineWeight = LineWeight.LineWeight025;
+                        lyr.LinetypeObjectId = RouteLT;
+
+                        lt.Add(lyr);
+                        tr.AddNewlyCreatedDBObject(lyr, true);
+
+                    }
+                }
+
                 tr.Commit();
             }
 

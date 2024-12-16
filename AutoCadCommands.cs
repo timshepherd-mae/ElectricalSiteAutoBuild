@@ -70,10 +70,99 @@ namespace ElectricalSiteAutoBuild
             }
         }
 
-            #endregion TestCommands
+
+        [CommandMethod("ATTBLK1")]
+        public void Attblk1()
+        {
+            Document acDoc = Application.DocumentManager.MdiActiveDocument;
+            Database acDb = acDoc.Database;
+            Editor acEd = acDoc.Editor;
+
+            EditorMethods ed = new EditorMethods();
+
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
+            {
+                BlockTable bt = (BlockTable)tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
+
+                if (!bt.Has("FNDTEST"))
+                    return;
+
+                BlockTableRecord modelspace = (BlockTableRecord)bt[BlockTableRecord.ModelSpace].GetObject(OpenMode.ForWrite);
+                BlockTableRecord blockdef = (BlockTableRecord)bt["FND"].GetObject(OpenMode.ForRead);
+
+                using (BlockReference blockref = new BlockReference(Point3d.Origin, blockdef.ObjectId))
+                {
+                    modelspace.AppendEntity(blockref);
+                    tr.AddNewlyCreatedDBObject(blockref, true);
+
+                    foreach (ObjectId id in blockdef)
+                    {
+                        DBObject obj = id.GetObject(OpenMode.ForRead);
+                        AttributeDefinition attdef = obj as AttributeDefinition;
+
+                        if ((attdef != null) && (!attdef.Constant))
+                        {
+                            using (AttributeReference attref = new AttributeReference())
+                            {
+                                attref.SetAttributeFromBlock(attdef, blockref.BlockTransform);
+                                blockref.AttributeCollection.AppendAttribute(attref);
+                                tr.AddNewlyCreatedDBObject(attref, true);
+                            }
+                        }
 
 
-            [CommandMethod("ESABINIT")]
+                    }
+                }
+
+                tr.Commit();
+            }
+
+        }
+
+
+        [CommandMethod("ATTBLK2")]
+        public void Attblk2()
+        {
+            Document acDoc = Application.DocumentManager.MdiActiveDocument;
+            Database acDb = acDoc.Database;
+            Editor acEd = acDoc.Editor;
+
+            EditorMethods ed = new EditorMethods();
+
+            PromptEntityOptions peo = new PromptEntityOptions("Select BlkRef: ");
+            peo.SetRejectMessage("\nOnly BlkRef entities allowed: ");
+            peo.AddAllowedClass(typeof(BlockReference), true);
+            PromptEntityResult per = acEd.GetEntity(peo);
+
+            if (per.Status != PromptStatus.OK)
+                return;
+
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
+            {
+                BlockReference blkref = (BlockReference)tr.GetObject(per.ObjectId, OpenMode.ForRead);
+
+               
+                
+                
+                AttributeCollection attcol = blkref.AttributeCollection;
+                foreach (ObjectId attId in attcol)
+                {
+                    AttributeReference attref = (AttributeReference)tr.GetObject(attId, OpenMode.ForRead);
+                    acEd.WriteMessage($"\n{attref.Position.ToString()}\n");
+                    acEd.WriteMessage($"\nTag: {attref.Tag}, Pos: {attref.AlignmentPoint.ToString()}\n");
+                }
+
+                tr.Commit();
+            }
+
+           
+
+        }
+
+        #endregion TestCommands
+
+
+        [CommandMethod("ESABINIT")]
         public void EsabInitialise()
         {
             GeometryMethods ge = new GeometryMethods();
