@@ -18,6 +18,12 @@ namespace ElectricalSiteAutoBuild
             bool ADVis = false;
             bool ADVer = false;
             bool ADLoc = true;
+
+            // create AttNamePos groups
+            //
+            AttNamePos[] FND = { new AttNamePos("FND", 0, 0, 0.050) };
+            AttNamePos[] SUP1 = { new AttNamePos("SUP", 0, 0, 3) };
+            
             
             // create necessary block definitions for modelling
             //
@@ -116,26 +122,12 @@ namespace ElectricalSiteAutoBuild
 
                         btr.AppendEntity(extrusion);
 
-                        using (AttributeDefinition attdef = new AttributeDefinition())
-                        {
-                            attdef.Verifiable = ADVer;
-                            attdef.Visible = ADVis;
-                            attdef.LockPositionInBlock = ADLoc;
-                            //attdef.Constant = true;
-                            attdef.Tag = "ATTPNT";
-                            attdef.TextString = "ATTPNT";
-                            attdef.Height = 0.2;
-                            attdef.Position = new Point3d(0, 0, 0.050);
+                        AddNodeAttributes(btr, FND);
+                        Add4dCodeAttributes(btr);
 
-                            btr.AppendEntity(attdef);
-
-                            Add4dCodeAttributes(btr);
-
-                            tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
-                            bt.Add(btr);
-                            tr.AddNewlyCreatedDBObject(btr, true);
-                        }
-
+                        tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
+                        bt.Add(btr);
+                        tr.AddNewlyCreatedDBObject(btr, true);
                         
                         tr.Commit();
 
@@ -150,11 +142,11 @@ namespace ElectricalSiteAutoBuild
 
                 BlockTable bt = (BlockTable)tr.GetObject(acDb.BlockTableId, OpenMode.ForRead);
 
-                if (!bt.Has("SUP"))
+                if (!bt.Has("SUP1"))
                 {
                     using (BlockTableRecord btr = new BlockTableRecord())
                     {
-                        btr.Name = "SUP";
+                        btr.Name = "SUP1";
                         btr.Origin = Point3d.Origin;
 
                         // create solid profile for low support end
@@ -167,7 +159,7 @@ namespace ElectricalSiteAutoBuild
                         profile.Closed = true;
                         profile.Elevation = 0.0;
 
-                        Vector3d path = new Vector3d(0, 0, 0.1);
+                        Vector3d path = new Vector3d(0, 0, 0.05);
 
                         Solid3d baseplate = new Solid3d();
                         baseplate.SetDatabaseDefaults();
@@ -178,8 +170,8 @@ namespace ElectricalSiteAutoBuild
 
                         // recycle profile for high support end
                         //
-                        profile.Elevation = 2.0;
-                        path = new Vector3d(0, 0, -0.1);
+                        profile.Elevation = 3.0;
+                        path = new Vector3d(0, 0, -0.05);
 
                         Solid3d topplate = new Solid3d();
                         topplate.SetDatabaseDefaults();
@@ -191,9 +183,9 @@ namespace ElectricalSiteAutoBuild
                         // create main support structure
                         //
                         Circle c = new Circle();
-                        c.Center = new Point3d(0, 0, 0.1);
-                        c.Radius = 0.25;
-                        path = new Vector3d(0, 0, 1.8);
+                        c.Center = new Point3d(0, 0, 0.05);
+                        c.Radius = 0.15;
+                        path = new Vector3d(0, 0, 2.9);
                         
                         Solid3d body = new Solid3d();
                         body.SetDatabaseDefaults();
@@ -202,32 +194,36 @@ namespace ElectricalSiteAutoBuild
 
                         btr.AppendEntity(body);
 
+                        AddNodeAttributes(btr, SUP1);
+                        Add4dCodeAttributes(btr);
 
-                        using (AttributeDefinition attdef = new AttributeDefinition())
-                        {
-                            attdef.Verifiable = ADVer;
-                            attdef.Visible = ADVis;
-                            attdef.LockPositionInBlock = ADLoc;
-                            //attdef.Constant = true;
-                            attdef.Tag = "ATTPNT";
-                            attdef.TextString = "ATTPNT";
-                            attdef.Height = 0.2;
-                            attdef.Position = new Point3d(0, 0, 2);
-
-                            btr.AppendEntity(attdef);
-
-                            Add4dCodeAttributes(btr);
-
-                            tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
-                            bt.Add(btr);
-                            tr.AddNewlyCreatedDBObject(btr, true);
-
-                        }
+                        tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
+                        bt.Add(btr);
+                        tr.AddNewlyCreatedDBObject(btr, true);
 
                         tr.Commit();
                     }
                 }
                 
+            }
+
+        }
+
+        public void AddNodeAttributes(BlockTableRecord btr, AttNamePos[] anps)
+        {
+            AttributeDefinition attdef;
+
+            foreach (AttNamePos anp in anps)
+            {
+            attdef = new AttributeDefinition();
+            attdef.Verifiable = false;
+            attdef.Visible = false;
+            attdef.LockPositionInBlock = true;
+            attdef.Tag = anp.AttName;
+            attdef.TextString = anp.AttName;
+            attdef.Height = 0.2;
+            attdef.Position = anp.AttPos;
+            btr.AppendEntity(attdef);
             }
 
         }
@@ -278,5 +274,18 @@ namespace ElectricalSiteAutoBuild
 
         }
 
+        public struct AttNamePos
+        {
+            public string AttName;
+            public Point3d AttPos;
+
+            public AttNamePos(string name, double x, double y, double z)
+            {
+                this.AttName = name;
+                this.AttPos = new Point3d(x, y, z);
+            }
+
+
+        }
     }
 }

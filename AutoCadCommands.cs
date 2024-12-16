@@ -84,7 +84,7 @@ namespace ElectricalSiteAutoBuild
             {
                 BlockTable bt = (BlockTable)tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
 
-                if (!bt.Has("FNDTEST"))
+                if (!bt.Has("FND"))
                     return;
 
                 BlockTableRecord modelspace = (BlockTableRecord)bt[BlockTableRecord.ModelSpace].GetObject(OpenMode.ForWrite);
