@@ -78,6 +78,9 @@ namespace ElectricalSiteAutoBuild
         {
             GeometryMethods ge = new GeometryMethods();
             ge.InitialiseGeometry();
+
+            ModelMethods mm = new ModelMethods();
+            mm.InitialiseModels();
         }
 
         [CommandMethod("EsabAssignRouteProps")]

@@ -69,6 +69,7 @@
     <Compile Include="InspectionTool.Designer.cs">
       <DependentUpon>InspectionTool.cs</DependentUpon>
     </Compile>
+    <Compile Include="ModelMethods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="EsabCore.cs" />
     <Compile Include="XDictionaryExtension.cs" />
