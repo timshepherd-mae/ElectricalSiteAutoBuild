@@ -97,13 +97,63 @@ namespace ElectricalSiteAutoBuild
                     }
                 }
 
-                if (!lt.Has("_Esab_Model"))
+                if (!lt.Has("_Esab_Model_General"))
                 {
                     using (LayerTableRecord lyr = new LayerTableRecord())
                     {
-                        lyr.Name = "_Esab_Model";
+                        lyr.Name = "_Esab_Model_General";
                         Color lcol = new Color();
                         lcol = Color.FromColorIndex(ColorMethod.ByAci, 7);
+                        lyr.Color = lcol;
+                        lyr.LineWeight = LineWeight.LineWeight025;
+                        lyr.LinetypeObjectId = RouteLT;
+
+                        lt.Add(lyr);
+                        tr.AddNewlyCreatedDBObject(lyr, true);
+
+                    }
+                }
+                if (!lt.Has("_Esab_Model_Equipment"))
+                {
+                    using (LayerTableRecord lyr = new LayerTableRecord())
+                    {
+                        lyr.Name = "_Esab_Model_Equipment";
+                        Color lcol = new Color();
+                        lcol = Color.FromColorIndex(ColorMethod.ByAci, 9);
+                        lyr.Color = lcol;
+                        lyr.LineWeight = LineWeight.LineWeight025;
+                        lyr.LinetypeObjectId = RouteLT;
+
+                        lt.Add(lyr);
+                        tr.AddNewlyCreatedDBObject(lyr, true);
+
+                    }
+                }
+
+                if (!lt.Has("_Esab_Model_Supports"))
+                {
+                    using (LayerTableRecord lyr = new LayerTableRecord())
+                    {
+                        lyr.Name = "_Esab_Model_Supports";
+                        Color lcol = new Color();
+                        lcol = Color.FromRgb(255,255,255);
+                        lyr.Color = lcol;
+                        lyr.LineWeight = LineWeight.LineWeight025;
+                        lyr.LinetypeObjectId = RouteLT;
+
+                        lt.Add(lyr);
+                        tr.AddNewlyCreatedDBObject(lyr, true);
+
+                    }
+                }
+
+                if (!lt.Has("_Esab_Model_Foundations"))
+                {
+                    using (LayerTableRecord lyr = new LayerTableRecord())
+                    {
+                        lyr.Name = "_Esab_Model_Foundations";
+                        Color lcol = new Color();
+                        lcol = Color.FromColorIndex(ColorMethod.ByAci, 8);
                         lyr.Color = lcol;
                         lyr.LineWeight = LineWeight.LineWeight025;
                         lyr.LinetypeObjectId = RouteLT;

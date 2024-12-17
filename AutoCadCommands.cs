@@ -155,9 +155,20 @@ namespace ElectricalSiteAutoBuild
                 tr.Commit();
             }
 
-           
-
         }
+
+        [CommandMethod("placegroup")]
+        public void placegroup()
+        {
+            ModelMethods mm = new ModelMethods();
+
+            ObjectId grpId = new ObjectId();
+
+            grpId = mm.InsertModelFeatureGroup("TESTGROUP", new string[] { "FND", "SUP1B", "PIB" }, new Point3d(10,10,3), Math.PI / 4);
+            grpId = mm.InsertModelFeatureGroup("TESTGROUP", new string[] { "FND", "SUP2B", "PIB" }, new Point3d(5, 5, 3), Math.PI / 4);
+            grpId = mm.InsertModelFeatureGroup("TESTGROUP", new string[] { "FND", "SUP1B", "PIB" }, new Point3d(10, 5, 3), Math.PI / 4);
+        }
+
 
         #endregion TestCommands
 
@@ -536,6 +547,49 @@ namespace ElectricalSiteAutoBuild
 
 
         }
+
+        [CommandMethod("ESABBUILDROUTE")]
+        public void BuildRoute()
+        {
+            Document acDoc = Application.DocumentManager.MdiActiveDocument;
+            Database acDb = acDoc.Database;
+            Editor acEd = acDoc.Editor;
+
+            // select the route gemetry
+            //
+            PromptEntityOptions peo = new PromptEntityOptions("\nSelect a route: \n");
+            peo.AddAllowedClass(typeof(Mline), true);
+            PromptEntityResult per = acEd.GetEntity(peo);
+
+            if (per.Status != PromptStatus.OK)
+                return;
+
+            Mline mline;
+            ResultBuffer rb;
+            EsabRoute route = new EsabRoute();
+
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
+            {
+                mline = (Mline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
+                rb = mline.GetXDictionaryXrecordData(Constants.XappName);
+                var data = rb.AsArray();
+                EsabXdType type = (EsabXdType)Enum.ToObject(typeof(EsabXdType), data[1].Value);
+
+                if (type != EsabXdType.Route)
+                {
+                    acEd.WriteMessage("\nSelection is not an ESAB Route entity\nExiting command\n");
+                    return;
+                }
+
+                route.FromXdictionary(mline);
+
+                tr.Commit();
+            }
+
+        }
+
+
+
 
         [CommandMethod("EsabInspect")] 
         public void EsabInspect()
