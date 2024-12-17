@@ -251,7 +251,7 @@ namespace ElectricalSiteAutoBuild
 
     public enum EsabJunctionType
     {
-        POST, FORK, LinkTo
+        POST, FORK, PANT, LinkTo
     }
 
     public enum EsabConductorType

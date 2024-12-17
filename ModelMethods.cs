@@ -19,6 +19,16 @@ namespace ElectricalSiteAutoBuild
             bool ADVer = false;
             bool ADLoc = true;
 
+            // model constants
+            //
+            double ElevationTier1 = 6.85;
+            double ElevationTier2 = 11.25;
+            double RadiusBusSTD = 0.1;
+            double RadiusBusGIB = 0.2;
+            double RadiusSupport = 0.15;
+            double LengthEquipSize1 = 3.0;
+            double LengthEquipSize2 = 4.0;
+
             // create AttNamePos groups
             //
             AttNamePos[] FND = { new AttNamePos("FND", 0, 0, 0.050) };
@@ -184,7 +194,7 @@ namespace ElectricalSiteAutoBuild
                         //
                         Circle c = new Circle();
                         c.Center = new Point3d(0, 0, 0.05);
-                        c.Radius = 0.15;
+                        c.Radius = RadiusSupport;
                         path = new Vector3d(0, 0, 2.9);
                         
                         Solid3d body = new Solid3d();
@@ -271,6 +281,17 @@ namespace ElectricalSiteAutoBuild
             attdef.Height = 0.2;
             attdef.Position = new Point3d(0, 0, 0);
             btr.AppendEntity(attdef);
+
+        }
+
+        public Solid3d Insulator(double length, double position)
+        {
+            double partlength = 0.25;
+            double radiusOut = 0.2;
+            double radiusIn = 0.16;
+
+            Solid3d solid3d = new Solid3d();
+            return null;
 
         }
 
