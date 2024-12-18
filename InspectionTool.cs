@@ -84,10 +84,13 @@ namespace ElectricalSiteAutoBuild
                         this.lvwItems.Items.Add("Separation: " + data[4].Value);
                         this.lvwItems.Items.Add("Colour:     " + (EsabPhaseColour)Enum.ToObject(typeof(EsabPhaseColour), data[5].Value));
                         this.lvwItems.Items.Add("Conductor:  " + (EsabConductorType)Enum.ToObject(typeof(EsabConductorType), data[6].Value));
+                        this.lvwItems.Items.Add("4D Region:  " + data[7].Value);
+                        this.lvwItems.Items.Add("4D Area:    " + data[8].Value);
+
                         if (Constants.ShowObjIds) this.lvwItems.Items.Add("Route Id:   " + data[0].Value);
 
                         this.lastSelectionGroup.Add(ent.ObjectId);
-                        for (int i = 7; i < data.Length; i++)
+                        for (int i = Constants.XpointerRoute; i < data.Length; i++)
                         {
                             this.lastSelectionGroup.Add((ObjectId)data[i].Value);
                         }

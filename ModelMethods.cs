@@ -59,6 +59,7 @@ namespace ElectricalSiteAutoBuild
             EditorMethods ed = new EditorMethods();
             GeometryMethods gm = new GeometryMethods();
 
+            
 
             #region Foundations
 
@@ -263,8 +264,6 @@ namespace ElectricalSiteAutoBuild
             #endregion Equipment
 
 
-
-
         }
 
         #region Model Build Methods
@@ -375,7 +374,7 @@ namespace ElectricalSiteAutoBuild
             return returnId;
         }
 
-        public Point3d InsertModelFeatureSet(string[] FeatureList, Point3d placement, double orientation)
+        public Point3d InsertModelFeatureSet(string[] FeatureList, Point3d placement, double orientation, EsabRoute route, string zone4d)
         {
             // chain a string of blockrefs from lastAttPnt to ThisInsPnt
             // add all to a new group, return the objId ofthe group
@@ -393,6 +392,7 @@ namespace ElectricalSiteAutoBuild
                 ObjectId blockRefId = new ObjectId();
 
                 Point3d currentAttPnt = placement;
+                
 
                 for (int i = 0; i < FeatureList.Length; i++)
                 {
@@ -435,6 +435,12 @@ namespace ElectricalSiteAutoBuild
                                     using (AttributeReference attref = new AttributeReference())
                                     {
                                         attref.SetAttributeFromBlock(attdef, blockRef.BlockTransform);
+
+                                        if (attref.Tag == "4D_Region") attref.TextString = route.codelist4D_region;
+                                        if (attref.Tag == "4D_Area") attref.TextString = route.codelist4D_area;
+                                        if (attref.Tag == "4D_Zone") attref.TextString = (i == 1) ? "SUP" : zone4d;
+                                        if (attref.Tag == "4D_Package") attref.TextString = (i == 0) ? "FND" : (i == 1) ? "SUP" : (i == 2) ? "EQU" : "NON";
+
                                         blockRef.AttributeCollection.AppendAttribute(attref);
                                         tr.AddNewlyCreatedDBObject(attref, true);
                                     }
@@ -468,48 +474,87 @@ namespace ElectricalSiteAutoBuild
 
         }
 
-        public void CreateInsertBusbar(string NameBase, Point3d start, Point3d end, Color color)
+        public void CreateInsertBusbar(string NameBase, Point3d start, Point3d end, Color color, EsabRoute route)
         {
 
             Database acDb = Application.DocumentManager.MdiActiveDocument.Database;
-            ObjectId blockId;
+            ObjectId blockDefId = new ObjectId();
+            ObjectId blockRefId = new ObjectId();
+            string BlockName;
 
 
             using (Transaction tr = acDb.TransactionManager.StartTransaction())
             {
                 BlockTable bt = (BlockTable)tr.GetObject(acDb.BlockTableId, OpenMode.ForRead);
-                string BlockName = NextFreeBlockName(bt, NameBase);
+                BlockName = NextFreeBlockName(bt, NameBase);
 
                 // create unique busbar block definition
                 //
-                using (BlockTableRecord btr = new BlockTableRecord())
+                using (BlockTableRecord blockDef = new BlockTableRecord())
                 {
-                    btr.Name = BlockName;
-                    btr.Origin = Point3d.Origin;
+                    blockDef.Name = BlockName;
+                    blockDef.Origin = Point3d.Origin;
 
                     Solid3d Busbar = CylinderTargetted(RadiusBusSTD, start, end, true);
                     Busbar.ColorIndex = 0;
-                    btr.AppendEntity(Busbar);
+                    blockDef.AppendEntity(Busbar);
 
-                    Add4dCodeAttributes(btr);
+                    Add4dCodeAttributes(blockDef);
 
                     tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
-                    blockId = bt.Add(btr);
-                    tr.AddNewlyCreatedDBObject(btr, true);
-                }
-
-                // insert block reference
-                //
-                using (BlockReference br = new BlockReference(start, blockId))
-                {
-                    br.Layer = "_Esab_Model_Conductors";
-                    br.Color = color;
-                    BlockTableRecord btr = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite);
-                    btr.AppendEntity(br);
-                    tr.AddNewlyCreatedDBObject(br, true);
+                    blockDefId = bt.Add(blockDef);
+                    tr.AddNewlyCreatedDBObject(blockDef, true);
                 }
 
                 tr.Commit();
+            }
+
+            // insert block reference
+            //
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
+            {
+
+                BlockTable bt = (BlockTable)tr.GetObject(acDb.BlockTableId, OpenMode.ForRead);
+                BlockTableRecord modelspace = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite);
+
+                BlockTableRecord blockDef = (BlockTableRecord)bt[BlockName].GetObject(OpenMode.ForRead);
+
+                using (BlockReference blockRef = new BlockReference(start, blockDef.ObjectId))
+                {
+                    blockRef.Layer = "_Esab_Model_Conductors";
+                    blockRef.Color = color;
+                    blockRefId = modelspace.AppendEntity(blockRef);
+                    tr.AddNewlyCreatedDBObject(blockRef, true);
+
+                    // transfer attribute definitions into new block
+                    //
+                    foreach (ObjectId id in blockDef)
+                    {
+                        DBObject obj = id.GetObject(OpenMode.ForRead);
+                        AttributeDefinition attdef = obj as AttributeDefinition;
+
+                        if ((attdef != null) && (!attdef.Constant))
+                        {
+                            using (AttributeReference attref = new AttributeReference())
+                            {
+                                attref.SetAttributeFromBlock(attdef, blockRef.BlockTransform);
+
+                                if (attref.Tag == "4D_Region") attref.TextString = route.codelist4D_region;
+                                if (attref.Tag == "4D_Area") attref.TextString = route.codelist4D_area;
+                                if (attref.Tag == "4D_Zone") attref.TextString = "CON";
+                                if (attref.Tag == "4D_Package") attref.TextString = Enum.GetName(typeof(EsabConductorType), route.defaultConductorType);
+
+                                blockRef.AttributeCollection.AppendAttribute(attref);
+                                tr.AddNewlyCreatedDBObject(attref, true);
+                            }
+                        }
+
+                    }
+
+                }
+
+                tr.Commit();
+
             }
 
         }
@@ -570,17 +615,18 @@ namespace ElectricalSiteAutoBuild
 
                         if (currentFeature.featureType == EsabFeatureType.PI)
                         {
-                            EndPoints.Add(InsertModelFeatureSet(new string[] { "FND", "SUP1B", "PIB" }, currentPoint, pathOrientation));
+                            EndPoints.Add(InsertModelFeatureSet(new string[] { "FND", "SUP1B", "PIB" }, currentPoint, pathOrientation, route, "PI"));
                         }
                     }
 
                     tr.Commit();
+
                 }
             }
             
             for (int i = 1; i < EndPoints.Count; i++)
             {
-                CreateInsertBusbar("BUS", EndPoints[i - 1], EndPoints[i], Color.FromRgb(255, 190, 190));
+                CreateInsertBusbar("BUS", EndPoints[i - 1], EndPoints[i], Color.FromRgb(255, 190, 190), route);
             }
             
             return ObjectId.Null;
@@ -845,6 +891,13 @@ namespace ElectricalSiteAutoBuild
 
         }
 
+        public struct CodeList4d
+        {
+            public string region;
+            public string area;
+            public string zone;
+            public string package;
+        }
         
 
     }

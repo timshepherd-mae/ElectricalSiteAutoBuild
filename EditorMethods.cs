@@ -29,11 +29,35 @@ namespace ElectricalSiteAutoBuild
             Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
 
             PromptIntegerOptions pio = new PromptIntegerOptions($"\n{prompt}: ");
-            //PromptDoubleOptions pdo = new PromptDoubleOptions($"\n{prompt}: ");
             PromptIntegerResult pir = acEd.GetInteger(pio);
             acEd.WriteMessage($"\n{pir.Value}\n");
             return pir.Value;
         }
+
+        public string GetStr(string prompt)
+        {
+            Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
+
+            PromptStringOptions pso = new PromptStringOptions($"\n{prompt}: ");
+            PromptResult psr = acEd.GetString(pso);
+
+            acEd.WriteMessage($"\n{psr.StringResult}\n");
+            return psr.StringResult;
+
+        }
+
+        public string GetStr(string prompt, string defaultChoice)
+        {
+            Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
+
+            PromptStringOptions pso = new PromptStringOptions($"\n{prompt} <{defaultChoice}>: ");
+            PromptResult psr = acEd.GetString(pso);
+
+            string result = (psr.StringResult.Length == 0) ? defaultChoice : psr.StringResult;
+            acEd.WriteMessage($"\n{result}\n");
+            return result;
+        }
+
 
         public int GetEnumFromKeywords(Type e, string prompt, string ignore = "")
         {

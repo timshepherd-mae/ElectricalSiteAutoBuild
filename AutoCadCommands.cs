@@ -224,6 +224,8 @@ namespace ElectricalSiteAutoBuild
                 acEd.Regen();
 
                 route.defaultConductorType = (EsabConductorType)ed.GetEnumFromKeywords(typeof(EsabConductorType), "Default Conductor");
+                route.codelist4D_region = ed.GetStr("4d Region Code", "NON");
+                route.codelist4D_area = ed.GetStr("4d Area Code", "NON");
 
 
                 // convert pline to mline
@@ -603,6 +605,17 @@ namespace ElectricalSiteAutoBuild
             iWindow.Show();
         }
 
+        [CommandMethod("EsabLockModel")]
+        public void LockModel()
+        {
+
+        }
+
+        [CommandMethod("EsabLockDefinition")]
+        public void LockDefinition()
+        {
+
+        }
 
     }
 

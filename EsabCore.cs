@@ -18,6 +18,7 @@ namespace ElectricalSiteAutoBuild
         //
         public const string XappName = "ESAB";
         public const bool ShowObjIds = true;
+        public const int XpointerRoute = 9;
 
     }
 
@@ -78,6 +79,8 @@ namespace ElectricalSiteAutoBuild
         public double phasesep = 0;
         public EsabPhaseColour phasecol;
         public EsabConductorType defaultConductorType;
+        public string codelist4D_region;
+        public string codelist4D_area;
         public ObjectIdCollection featureIds = new ObjectIdCollection();
 
         // constructors
@@ -88,7 +91,7 @@ namespace ElectricalSiteAutoBuild
 
         public void ToXdictionary(DBObject dbo)
         {
-            int tvCount = featureIds.Count + 7;
+            int tvCount = featureIds.Count + Constants.XpointerRoute;
             TypedValue[] xdata = new TypedValue[tvCount];
 
             xdata[0] = new TypedValue((int)DxfCode.SoftPointerId, id);              // route ent id
@@ -98,10 +101,12 @@ namespace ElectricalSiteAutoBuild
             xdata[4] = new TypedValue((int)DxfCode.Real, phasesep);                // threephase seperation distance
             xdata[5] = new TypedValue((int)DxfCode.Int32, phasecol);                // phase color
             xdata[6] = new TypedValue((int)DxfCode.Int32, defaultConductorType);    // conductor
+            xdata[7] = new TypedValue((int)DxfCode.Text, codelist4D_region);
+            xdata[8] = new TypedValue((int)DxfCode.Text, codelist4D_area);
 
             for (int i = 0; i < featureIds.Count; i++)
             {
-                xdata[i + 7] = new TypedValue((int)DxfCode.SoftPointerId, featureIds[i]);
+                xdata[i + Constants.XpointerRoute] = new TypedValue((int)DxfCode.SoftPointerId, featureIds[i]);
             }
 
             dbo.SetXDictionaryXrecordData(Constants.XappName, xdata);
@@ -122,8 +127,10 @@ namespace ElectricalSiteAutoBuild
                 phasesep = (double)data[4].Value;
                 phasecol = (EsabPhaseColour)Enum.ToObject(typeof(EsabPhaseColour), data[5].Value);
                 defaultConductorType = (EsabConductorType)Enum.ToObject(typeof(EsabConductorType), data[6].Value);
+                codelist4D_region = (string)data[7].Value;
+                codelist4D_area = (string)data[8].Value;
 
-                for (int i = 7; i < data.Length; i++)
+                for (int i = Constants.XpointerRoute; i < data.Length; i++)
                 {
                         featureIds.Add((ObjectId)data[i].Value);
                 }
@@ -256,7 +263,7 @@ namespace ElectricalSiteAutoBuild
 
     public enum EsabConductorType
     {
-        GIB, Busbar, Cable
+        GIB, BUS, CAB
     }
  
     public enum EsabPhaseType
