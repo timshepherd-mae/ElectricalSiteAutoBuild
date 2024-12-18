@@ -8,6 +8,7 @@ using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.Colors;
 
+
 namespace ElectricalSiteAutoBuild
 {
     public class GeometryMethods
@@ -552,6 +553,7 @@ namespace ElectricalSiteAutoBuild
             }
 
             #endregion MLine Styles
+
 
         }
 

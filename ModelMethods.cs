@@ -6,6 +6,8 @@ using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.Colors;
+using Autodesk.Aec.PropertyData.DatabaseServices;
+using System.Collections.Specialized;
 
 namespace ElectricalSiteAutoBuild
 {
@@ -33,6 +35,7 @@ namespace ElectricalSiteAutoBuild
         double SizePlateEquipB = 0.8;
         double DepthPlate = 0.05;
         double ElevationTOC = 0.05;
+        
 
         #endregion Model Method Constants
 
@@ -59,7 +62,54 @@ namespace ElectricalSiteAutoBuild
             EditorMethods ed = new EditorMethods();
             GeometryMethods gm = new GeometryMethods();
 
-            
+
+            #region PropertySet Definitions
+
+            // create propset definition for 4d codesets
+            //
+            try
+            {
+                PropertySetDefinition codeset4d = new PropertySetDefinition();
+                codeset4d.SetToStandard(acDb);
+                codeset4d.SubSetDatabaseDefaults(acDb);
+                codeset4d.Description = "CodeSet to handle 4d code values";
+
+                bool isStyle = false;
+                StringCollection appliedTo = new StringCollection();
+                appliedTo.Add("AcDbBlockReference");
+
+                codeset4d.SetAppliesToFilter(appliedTo, isStyle);
+
+                PropertyDefinition c4d_region = new PropertyDefinition();
+                c4d_region.SetToStandard(acDb);
+                c4d_region.SubSetDatabaseDefaults(acDb);
+                c4d_region.Name = "4D_Region";
+                c4d_region.Description = "Region code for 4d coding";
+                c4d_region.DataType = Autodesk.Aec.PropertyData.DataType.Text;
+                c4d_region.DefaultData = "test";
+
+                codeset4d.Definitions.Add(c4d_region);
+
+                using (Transaction tr = acDb.TransactionManager.StartTransaction())
+                {
+                    DictionaryPropertySetDefinitions dictPsetDef = new DictionaryPropertySetDefinitions(acDb);
+                    if (dictPsetDef.Has("CODESET4D", tr))
+                        return;
+
+                    dictPsetDef.AddNewRecord("CODESET4D", codeset4d);
+                    tr.AddNewlyCreatedDBObject(codeset4d, true);
+                    tr.Commit();
+                }
+
+            }
+            catch
+            {
+                return;
+            }
+
+
+            #endregion PropertySet Definitions
+
 
             #region Foundations
 
@@ -262,6 +312,7 @@ namespace ElectricalSiteAutoBuild
 
 
             #endregion Equipment
+
 
 
         }

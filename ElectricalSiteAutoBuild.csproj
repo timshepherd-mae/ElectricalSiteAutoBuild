@@ -44,6 +44,15 @@
       <HintPath>..\..\..\..\..\..\Program Files\Autodesk\AutoCAD 2022\acmgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="AecBaseMgd">
+      <HintPath>..\..\..\..\..\..\Program Files\Autodesk\AutoCAD 2022\ACA\AecBaseMgd.dll</HintPath>
+    </Reference>
+    <Reference Include="AeccDbMgd">
+      <HintPath>..\..\..\..\..\..\Program Files\Autodesk\AutoCAD 2022\C3D\AeccDbMgd.dll</HintPath>
+    </Reference>
+    <Reference Include="AecPropDataMgd">
+      <HintPath>..\..\..\..\..\..\Program Files\Autodesk\AutoCAD 2022\ACA\AecPropDataMgd.dll</HintPath>
+    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
