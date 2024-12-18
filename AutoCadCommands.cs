@@ -555,9 +555,12 @@ namespace ElectricalSiteAutoBuild
             Database acDb = acDoc.Database;
             Editor acEd = acDoc.Editor;
 
+            ModelMethods mm = new ModelMethods();
+
             // select the route gemetry
             //
             PromptEntityOptions peo = new PromptEntityOptions("\nSelect a route: \n");
+            peo.SetRejectMessage("\nSelection must be Mline entity\n");
             peo.AddAllowedClass(typeof(Mline), true);
             PromptEntityResult per = acEd.GetEntity(peo);
 
@@ -585,6 +588,8 @@ namespace ElectricalSiteAutoBuild
 
                 tr.Commit();
             }
+
+            ObjectId returnId = mm.BuildSinglePhaseRoute("NEWTEST", route, mline);
 
         }
 

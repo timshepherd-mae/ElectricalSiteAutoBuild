@@ -11,31 +11,34 @@ namespace ElectricalSiteAutoBuild
 {
     public class ModelMethods
     {
+        #region Model Method Constants
+
+        // attdef constants
+        //
+        bool ADVis = false;
+        bool ADVer = false;
+        bool ADLoc = true;
+
+        // model constants
+        //
+        double ElevationTier1 = 6.85;
+        double ElevationTier2 = 11.25;
+        double RadiusBusSTD = 0.1;
+        double RadiusBusGIB = 0.2;
+        double RadiusSupportA = 0.15;
+        double RadiusSupportB = 0.20;
+        double LengthEquipA = 3.0;
+        double LengthEquipB = 4.0;
+        double SizePlateEquipA = 0.6;
+        double SizePlateEquipB = 0.8;
+        double DepthPlate = 0.05;
+        double ElevationTOC = 0.05;
+
+        #endregion Model Method Constants
+
         public void InitialiseModels()
         {
 
-            #region Model Method Constants
-
-            // attdef constants
-            //
-            bool ADVis = false;
-            bool ADVer = false;
-            bool ADLoc = true;
-
-            // model constants
-            //
-            double ElevationTier1 = 6.85;
-            double ElevationTier2 = 11.25;
-            double RadiusBusSTD = 0.1;
-            double RadiusBusGIB = 0.2;
-            double RadiusSupportA = 0.15;
-            double RadiusSupportB = 0.20;
-            double LengthEquipA = 3.0;
-            double LengthEquipB = 4.0;
-            double SizePlateEquipA = 0.6;
-            double SizePlateEquipB = 0.8;
-            double DepthPlate = 0.05;
-            double ElevationTOC = 0.05;
 
             // create AttNamePos groups
             //
@@ -45,8 +48,6 @@ namespace ElectricalSiteAutoBuild
             AttNamePos[] SUP1B = { new AttNamePos("ATTPNT", 0, 0, ElevationTier1 - LengthEquipB - ElevationTOC) };
             AttNamePos[] SUP2B = { new AttNamePos("ATTPNT", 0, 0, ElevationTier2 - LengthEquipB - ElevationTOC) };
             AttNamePos[] PIB = { new AttNamePos("ATTPNT", 0, 0, LengthEquipB) };
-
-            #endregion Model Method Constants
 
 
             // create necessary block definitions for modelling
@@ -215,7 +216,7 @@ namespace ElectricalSiteAutoBuild
 
             #region Equipment
 
-            // create PI(A)
+            // create PI(B)
             //
             using (Transaction tr = acDb.TransactionManager.StartTransaction())
             {
@@ -374,8 +375,209 @@ namespace ElectricalSiteAutoBuild
             return returnId;
         }
 
+        public void InsertModelFeatureSet(string[] FeatureList, Point3d placement, double orientation)
+        {
+            // chain a string of blockrefs from lastAttPnt to ThisInsPnt
+            // add all to a new group, return the objId ofthe group
+            //
+            Database acDb = Application.DocumentManager.MdiActiveDocument.Database;
+
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
+            {
+
+                BlockTable bt = (BlockTable)tr.GetObject(acDb.BlockTableId, OpenMode.ForRead);
+                BlockTableRecord modelspace = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite);
+
+                ObjectIdCollection blockRefIds = new ObjectIdCollection();
+                ObjectId blockRefId = new ObjectId();
+
+                Point3d currentAttPnt = placement;
+
+                for (int i = 0; i < FeatureList.Length; i++)
+                {
+                    if (bt.Has(FeatureList[i]))
+                    {
+                        BlockTableRecord blockDef = (BlockTableRecord)bt[FeatureList[i]].GetObject(OpenMode.ForRead);
+
+                        using (BlockReference blockRef = new BlockReference(currentAttPnt, blockDef.ObjectId))
+                        {
+
+                            switch (i) // assign layer
+                            {
+                                case 0:
+                                    blockRef.Layer = "_Esab_Model_Foundations";
+                                    break;
+                                case 1:
+                                    blockRef.Layer = "_Esab_Model_Supports";
+                                    break;
+                                case 2:
+                                    blockRef.Layer = "_Esab_Model_Equipment";
+                                    break;
+                                default:
+                                    blockRef.Layer = "_Esab_Model_General";
+                                    break;
+                            }
+
+                            blockRef.Rotation = orientation;
+                            blockRefId = modelspace.AppendEntity(blockRef);
+                            tr.AddNewlyCreatedDBObject(blockRef, true);
+
+                            // transfer attribute definitions into new block
+                            //
+                            foreach (ObjectId id in blockDef)
+                            {
+                                DBObject obj = id.GetObject(OpenMode.ForRead);
+                                AttributeDefinition attdef = obj as AttributeDefinition;
+
+                                if ((attdef != null) && (!attdef.Constant))
+                                {
+                                    using (AttributeReference attref = new AttributeReference())
+                                    {
+                                        attref.SetAttributeFromBlock(attdef, blockRef.BlockTransform);
+                                        blockRef.AttributeCollection.AppendAttribute(attref);
+                                        tr.AddNewlyCreatedDBObject(attref, true);
+                                    }
+                                }
+                            }
+
+                            // get the new atribute references
+                            // and get 3d location of ATTPNT
+                            //
+                            AttributeCollection attcol = blockRef.AttributeCollection;
+                            foreach (ObjectId attId in attcol)
+                            {
+                                AttributeReference attref = (AttributeReference)tr.GetObject(attId, OpenMode.ForRead);
+                                if (attref.Tag == "ATTPNT")
+                                    currentAttPnt = attref.Position;
+                            }
+
+                            blockRefIds.Add(blockRefId);
+
+                        }
+                    }
+                }
+
+                tr.Commit();
+
+            }
+
+        }
+
+        public void CreateInsertBusbar(string NameBase, Point3d start, Point3d end, Color color)
+        {
+
+            Database acDb = Application.DocumentManager.MdiActiveDocument.Database;
+            ObjectId blockId;
+
+
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
+            {
+                BlockTable bt = (BlockTable)tr.GetObject(acDb.BlockTableId, OpenMode.ForRead);
+                string BlockName = NextFreeBlockName(bt, NameBase);
+
+                // create unique busbar block definition
+                //
+                using (BlockTableRecord btr = new BlockTableRecord())
+                {
+                    btr.Name = BlockName;
+                    btr.Origin = end;
+
+                    Solid3d Busbar = CylinderTargetted(RadiusBusSTD, start, end);
+                    Busbar.ColorIndex = 0;
+                    btr.AppendEntity(Busbar);
+
+                    Add4dCodeAttributes(btr);
+
+                    tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
+                    blockId = bt.Add(btr);
+                    tr.AddNewlyCreatedDBObject(btr, true);
+                }
+
+                // insert block reference
+                //
+                using (BlockReference br = new BlockReference(end, blockId))
+                {
+                    br.Layer = "_Esab_Model_Conductors";
+                    br.Color = color;
+                    BlockTableRecord btr = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite);
+                    btr.AppendEntity(br);
+                    tr.AddNewlyCreatedDBObject(br, true);
+                }
+
+                tr.Commit();
+            }
+
+        }
+
+
         public ObjectId BuildSinglePhaseRoute( string GroupNameBase, EsabRoute route, Mline mline)
         {
+
+            Database acDb = Application.DocumentManager.MdiActiveDocument.Database;
+
+            Vector3d pathDirection;
+            Double pathOrientation;
+            Point3d currentPoint;
+            ObjectId currentFeatureId;
+            EsabFeature currentFeature = new EsabFeature();
+            Entity currentFeatureEntity;
+            ResultBuffer rb;
+            
+            // cycle through featureIds / vertices
+            //
+            for (int i = 0; i < route.featureIds.Count; i++)
+            {
+
+                // get path vector from vertices i-1 >> i
+                // or from 0 >> 1 if at start
+                //
+                if (i == 0)
+                {
+                    pathDirection = mline.VertexAt(0) - mline.VertexAt(1);
+                    pathOrientation = pathDirection.GetAngleTo(Vector3d.XAxis);
+                }
+                else
+                {
+                    pathDirection = mline.VertexAt(i-1) - mline.VertexAt(i);
+                    pathOrientation = pathDirection.GetAngleTo(Vector3d.XAxis);
+                }
+
+                currentPoint = mline.VertexAt(i);
+                currentFeatureId = route.featureIds[i];
+
+                // get the feature and populate an EsabFeature class
+                //
+                using (Transaction tr = acDb.TransactionManager.StartTransaction())
+                {
+                    currentFeatureEntity = (Entity)tr.GetObject(currentFeatureId, OpenMode.ForRead);
+                    rb = currentFeatureEntity.GetXDictionaryXrecordData(Constants.XappName);
+                    var data = rb.AsArray();
+                    EsabXdType type = (EsabXdType)Enum.ToObject(typeof(EsabXdType), data[1].Value);
+
+                    // check that feature xdType is 'feature'
+                    // TODO encapsulate all xdTypes in switch
+                    //
+                    if (type == EsabXdType.Feature)
+                    {
+                        currentFeature.FromXdictionary(currentFeatureEntity);
+
+                        if (currentFeature.featureType == EsabFeatureType.PI)
+                        {
+                            InsertModelFeatureSet(new string[] { "FND", "SUP1B", "PIB" }, currentPoint, pathOrientation);
+                        }
+                    }
+
+                    tr.Commit();
+                }
+
+/*                if (i != 0)
+                {
+                    CreateInsertBusbar("BUS", mline.VertexAt(i-1),mline.VertexAt(i),Color.FromRgb(255,190,190));
+                }
+*/
+            }
+            
+            
             return ObjectId.Null;
         }
 
@@ -399,7 +601,7 @@ namespace ElectricalSiteAutoBuild
             attdef.Visible = false;
             attdef.LockPositionInBlock = true;
             attdef.Tag = anp.AttName;
-            attdef.TextString = anp.AttName;
+            attdef.TextString = "0";
             attdef.Height = 0.2;
             attdef.Position = anp.AttPos;
             btr.AppendEntity(attdef);
@@ -460,6 +662,15 @@ namespace ElectricalSiteAutoBuild
 
         }
 
+        public string NextFreeBlockName(BlockTable bt, string nameBase, int startFrom = 1)
+        {
+            // find next numbers name that does not already exist in the blocktable
+            //
+            int current = startFrom;
+            while (bt.Has(nameBase + current.ToString())) { current++; }
+            return nameBase + current.ToString();
+        }
+
         public Solid3d Insulator(double length, double topElevation, Point2d columnPosition)
         {
             double partlength = 0.25;
@@ -508,6 +719,23 @@ namespace ElectricalSiteAutoBuild
             cylinderbasic.ColorIndex = 0;
 
             return cylinderbasic;
+        }
+
+        public Solid3d CylinderTargetted(double radius, Point3d start, Point3d end)
+        {
+            Solid3d cylindertargetted = new Solid3d();
+            Vector3d path = start - end;
+
+            Circle circ = new Circle();
+            circ.Center = Point3d.Origin;
+            circ.Normal = path;
+            circ.Radius = radius;
+
+            cylindertargetted.CreateExtrudedSolid(circ, path, new SweepOptions());
+
+            cylindertargetted.ColorIndex = 0;
+
+            return cylindertargetted;
         }
 
         public Solid3d Foundation(double size, double depth, double toc)
