@@ -548,7 +548,7 @@ namespace ElectricalSiteAutoBuild
 
         }
 
-        [CommandMethod("ESABBUILDROUTE")]
+        [CommandMethod("EsabBuildRoute")]
         public void BuildRoute()
         {
             Document acDoc = Application.DocumentManager.MdiActiveDocument;

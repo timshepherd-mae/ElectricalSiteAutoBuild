@@ -47,7 +47,7 @@ namespace ElectricalSiteAutoBuild
             AttNamePos[] SUP2A = { new AttNamePos("ATTPNT", 0, 0, ElevationTier2 - LengthEquipA - ElevationTOC) };
             AttNamePos[] SUP1B = { new AttNamePos("ATTPNT", 0, 0, ElevationTier1 - LengthEquipB - ElevationTOC) };
             AttNamePos[] SUP2B = { new AttNamePos("ATTPNT", 0, 0, ElevationTier2 - LengthEquipB - ElevationTOC) };
-            AttNamePos[] PIB = { new AttNamePos("ATTPNT", 0, 0, LengthEquipB) };
+            AttNamePos[] PIB = { new AttNamePos("ENDPNT", 0, 0, LengthEquipB) };
 
 
             // create necessary block definitions for modelling
@@ -375,12 +375,13 @@ namespace ElectricalSiteAutoBuild
             return returnId;
         }
 
-        public void InsertModelFeatureSet(string[] FeatureList, Point3d placement, double orientation)
+        public Point3d InsertModelFeatureSet(string[] FeatureList, Point3d placement, double orientation)
         {
             // chain a string of blockrefs from lastAttPnt to ThisInsPnt
             // add all to a new group, return the objId ofthe group
             //
             Database acDb = Application.DocumentManager.MdiActiveDocument.Database;
+            Point3d EndPoint = new Point3d();
 
             using (Transaction tr = acDb.TransactionManager.StartTransaction())
             {
@@ -449,6 +450,8 @@ namespace ElectricalSiteAutoBuild
                                 AttributeReference attref = (AttributeReference)tr.GetObject(attId, OpenMode.ForRead);
                                 if (attref.Tag == "ATTPNT")
                                     currentAttPnt = attref.Position;
+                                if (attref.Tag == "ENDPNT")
+                                    EndPoint = attref.Position;
                             }
 
                             blockRefIds.Add(blockRefId);
@@ -460,6 +463,8 @@ namespace ElectricalSiteAutoBuild
                 tr.Commit();
 
             }
+
+            return EndPoint;
 
         }
 
@@ -480,9 +485,9 @@ namespace ElectricalSiteAutoBuild
                 using (BlockTableRecord btr = new BlockTableRecord())
                 {
                     btr.Name = BlockName;
-                    btr.Origin = end;
+                    btr.Origin = Point3d.Origin;
 
-                    Solid3d Busbar = CylinderTargetted(RadiusBusSTD, start, end);
+                    Solid3d Busbar = CylinderTargetted(RadiusBusSTD, start, end, true);
                     Busbar.ColorIndex = 0;
                     btr.AppendEntity(Busbar);
 
@@ -495,7 +500,7 @@ namespace ElectricalSiteAutoBuild
 
                 // insert block reference
                 //
-                using (BlockReference br = new BlockReference(end, blockId))
+                using (BlockReference br = new BlockReference(start, blockId))
                 {
                     br.Layer = "_Esab_Model_Conductors";
                     br.Color = color;
@@ -522,6 +527,8 @@ namespace ElectricalSiteAutoBuild
             EsabFeature currentFeature = new EsabFeature();
             Entity currentFeatureEntity;
             ResultBuffer rb;
+
+            List<Point3d> EndPoints = new List<Point3d>();
             
             // cycle through featureIds / vertices
             //
@@ -563,20 +570,18 @@ namespace ElectricalSiteAutoBuild
 
                         if (currentFeature.featureType == EsabFeatureType.PI)
                         {
-                            InsertModelFeatureSet(new string[] { "FND", "SUP1B", "PIB" }, currentPoint, pathOrientation);
+                            EndPoints.Add(InsertModelFeatureSet(new string[] { "FND", "SUP1B", "PIB" }, currentPoint, pathOrientation));
                         }
                     }
 
                     tr.Commit();
                 }
-
-/*                if (i != 0)
-                {
-                    CreateInsertBusbar("BUS", mline.VertexAt(i-1),mline.VertexAt(i),Color.FromRgb(255,190,190));
-                }
-*/
             }
             
+            for (int i = 1; i < EndPoints.Count; i++)
+            {
+                CreateInsertBusbar("BUS", EndPoints[i - 1], EndPoints[i], Color.FromRgb(255, 190, 190));
+            }
             
             return ObjectId.Null;
         }
@@ -721,13 +726,13 @@ namespace ElectricalSiteAutoBuild
             return cylinderbasic;
         }
 
-        public Solid3d CylinderTargetted(double radius, Point3d start, Point3d end)
+        public Solid3d CylinderTargetted(double radius, Point3d start, Point3d end, bool Normalised)
         {
             Solid3d cylindertargetted = new Solid3d();
-            Vector3d path = start - end;
+            Vector3d path = end - start;
 
             Circle circ = new Circle();
-            circ.Center = Point3d.Origin;
+            circ.Center = (Normalised) ? Point3d.Origin : start;
             circ.Normal = path;
             circ.Radius = radius;
 
@@ -838,8 +843,9 @@ namespace ElectricalSiteAutoBuild
                 this.AttPos = new Point3d(x, y, z);
             }
 
-
         }
+
+        
 
     }
 }
