@@ -42,7 +42,7 @@ namespace ElectricalSiteAutoBuild
             mm.InitialiseModels();
         }
 
-        [CommandMethod("EsabAssignRouteProps")]
+        [CommandMethod("-EsabAssignRouteProps")]
         public void AssignRouteProperties()
         {
             // select a LW Polyline as esab route and 
@@ -450,7 +450,7 @@ namespace ElectricalSiteAutoBuild
                 tr.Commit();
             }
 
-            ObjectId returnId = mm.BuildSinglePhaseRoute(route, mline);
+            ObjectId ReturnId = mm.BuildSinglePhaseRoute(route, mline);
 
         }
 

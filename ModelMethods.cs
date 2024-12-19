@@ -50,7 +50,14 @@ namespace ElectricalSiteAutoBuild
             AttNamePos[] SUP2A = { new AttNamePos("ATTPNT", 0, 0, ElevationTier2 - LengthEquipA - ElevationTOC) };
             AttNamePos[] SUP1B = { new AttNamePos("ATTPNT", 0, 0, ElevationTier1 - LengthEquipB - ElevationTOC) };
             AttNamePos[] SUP2B = { new AttNamePos("ATTPNT", 0, 0, ElevationTier2 - LengthEquipB - ElevationTOC) };
-            AttNamePos[] PIB = { new AttNamePos("ENDPNT", 0, 0, LengthEquipB) };
+            AttNamePos[] PIB = {
+                new AttNamePos("NODE_0_L", 0, 0, LengthEquipB),
+                new AttNamePos("NODE_0_M", 0, 0, LengthEquipB),
+                new AttNamePos("NODE_0_R", 0, 0, LengthEquipB),
+                new AttNamePos("NODE_1_L", 0, 0, LengthEquipB),
+                new AttNamePos("NODE_1_M", 0, 0, LengthEquipB),
+                new AttNamePos("NODE_1_R", 0, 0, LengthEquipB),
+            };
 
 
             // create necessary block definitions for modelling
@@ -342,13 +349,13 @@ namespace ElectricalSiteAutoBuild
 
         #region Model Build Methods
 
-        public Point3d InsertModelFeatureSet(string[] FeatureList, Point3d placement, double orientation, EsabRoute route, string zone4d)
+        public Point3d[] InsertModelFeatureSet(string[] FeatureList, Point3d placement, double orientation, EsabRoute route, string zone4d)
         {
             // chain a string of blockrefs from lastAttPnt to ThisInsPnt
             // add all to a new group, return the objId ofthe group
             //
             Database acDb = Application.DocumentManager.MdiActiveDocument.Database;
-            Point3d EndPoint = new Point3d();
+            Point3d[] EndPointSet = { Point3d.Origin, Point3d.Origin, Point3d.Origin, Point3d.Origin, Point3d.Origin, Point3d.Origin };
             DBObject obj;
             string assignPack4d = "NON";
             string assignZone4d; 
@@ -411,25 +418,6 @@ namespace ElectricalSiteAutoBuild
                             ApplyCODESET4D(acDb, tr, obj);
                             UpdateCODESET4D(acDb, tr, obj, route.codelist4D_region, route.codelist4D_area, assignZone4d, assignPack4d);
 
-
-/*
-                            foreach (ObjectId id in blockDef)
-                            {
-                                DBObject obj = id.GetObject(OpenMode.ForRead);
-                                AttributeDefinition attdef = obj as AttributeDefinition;
-
-                                if ((attdef != null) && (!attdef.Constant))
-                                {
-                                    using (AttributeReference attref = new AttributeReference())
-                                    {
-                                        attref.SetAttributeFromBlock(attdef, blockRef.BlockTransform);
-                                        blockRef.AttributeCollection.AppendAttribute(attref);
-                                        tr.AddNewlyCreatedDBObject(attref, true);
-                                    }
-                                }
-                            }
-*/
-
                             // get the new atribute references
                             // and get 3d location of ATTPNT
                             //
@@ -437,10 +425,13 @@ namespace ElectricalSiteAutoBuild
                             foreach (ObjectId attId in attcol)
                             {
                                 AttributeReference attref = (AttributeReference)tr.GetObject(attId, OpenMode.ForRead);
-                                if (attref.Tag == "ATTPNT")
-                                    currentAttPnt = attref.Position;
-                                if (attref.Tag == "ENDPNT")
-                                    EndPoint = attref.Position;
+                                if (attref.Tag == "ATTPNT") currentAttPnt = attref.Position;
+                                if (attref.Tag == "NODE_0_L") EndPointSet[0] = attref.Position;
+                                if (attref.Tag == "NODE_0_M") EndPointSet[1] = attref.Position;
+                                if (attref.Tag == "NODE_0_R") EndPointSet[2] = attref.Position;
+                                if (attref.Tag == "NODE_1_L") EndPointSet[3] = attref.Position;
+                                if (attref.Tag == "NODE_1_M") EndPointSet[4] = attref.Position;
+                                if (attref.Tag == "NODE_1_R") EndPointSet[5] = attref.Position;
                             }
 
                             blockRefIds.Add(blockRefId);
@@ -454,7 +445,7 @@ namespace ElectricalSiteAutoBuild
             }
 
 
-            return EndPoint;
+            return EndPointSet;
 
         }
 
@@ -498,7 +489,18 @@ namespace ElectricalSiteAutoBuild
             Entity currentFeatureEntity;
             ResultBuffer rb;
 
-            List<Point3d> EndPoints = new List<Point3d>();
+            Dictionary<string, Color> phasecolours = new Dictionary<string, Color>()
+            {
+                { "R", Color.FromRgb(255, 190, 190) },
+                { "Y", Color.FromRgb(255, 255, 190) },
+                { "B", Color.FromRgb(190, 190, 255) }
+            };
+
+
+            //phasecolours.Add("R", Color.FromRgb(255, 190, 190));
+
+
+            List<Point3d[]> EndPointSetCollection = new List<Point3d[]>();
             
             // cycle through featureIds / vertices
             //
@@ -540,7 +542,8 @@ namespace ElectricalSiteAutoBuild
 
                         if (currentFeature.featureType == EsabFeatureType.PI)
                         {
-                            EndPoints.Add(InsertModelFeatureSet(new string[] { "FND", "SUP1B", "PIB" }, currentPoint, pathOrientation, route, "PI"));
+                            
+                            EndPointSetCollection.Add(InsertModelFeatureSet(new string[] { "FND", "SUP1B", "PIB" }, currentPoint, pathOrientation, route, "PI"));
                         }
                     }
 
@@ -549,9 +552,9 @@ namespace ElectricalSiteAutoBuild
                 }
             }
             
-            for (int i = 1; i < EndPoints.Count; i++)
+            for (int i = 1; i < EndPointSetCollection.Count; i++)
             {
-                InsertConductor(EndPoints[i - 1], EndPoints[i], Color.FromRgb(255, 190, 190), route);
+                InsertConductor(EndPointSetCollection[i - 1][4], EndPointSetCollection[i][1], phasecolours[Enum.GetName(typeof(EsabPhaseColour), route.phasecol)], route);
             }
             
             return ObjectId.Null;
