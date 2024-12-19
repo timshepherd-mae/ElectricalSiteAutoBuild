@@ -77,18 +77,49 @@ namespace ElectricalSiteAutoBuild
                 bool isStyle = false;
                 StringCollection appliedTo = new StringCollection();
                 appliedTo.Add("AcDbBlockReference");
+                appliedTo.Add("AcDb3dSolid");
 
                 codeset4d.SetAppliesToFilter(appliedTo, isStyle);
 
                 PropertyDefinition c4d_region = new PropertyDefinition();
                 c4d_region.SetToStandard(acDb);
                 c4d_region.SubSetDatabaseDefaults(acDb);
-                c4d_region.Name = "4D_Region";
+                c4d_region.Name = "4D (1) Region";
                 c4d_region.Description = "Region code for 4d coding";
                 c4d_region.DataType = Autodesk.Aec.PropertyData.DataType.Text;
-                c4d_region.DefaultData = "test";
+                c4d_region.DefaultData = "NON";
 
                 codeset4d.Definitions.Add(c4d_region);
+
+                PropertyDefinition c4d_area = new PropertyDefinition();
+                c4d_area.SetToStandard(acDb);
+                c4d_area.SubSetDatabaseDefaults(acDb);
+                c4d_area.Name = "4D (2) Area";
+                c4d_area.Description = "Area code for 4d coding";
+                c4d_area.DataType = Autodesk.Aec.PropertyData.DataType.Text;
+                c4d_area.DefaultData = "NON";
+
+                codeset4d.Definitions.Add(c4d_area);
+
+                PropertyDefinition c4d_zone = new PropertyDefinition();
+                c4d_zone.SetToStandard(acDb);
+                c4d_zone.SubSetDatabaseDefaults(acDb);
+                c4d_zone.Name = "4D (3) Zone";
+                c4d_zone.Description = "Zone code for 4d coding";
+                c4d_zone.DataType = Autodesk.Aec.PropertyData.DataType.Text;
+                c4d_zone.DefaultData = "NON";
+
+                codeset4d.Definitions.Add(c4d_zone);
+
+                PropertyDefinition c4d_package = new PropertyDefinition();
+                c4d_package.SetToStandard(acDb);
+                c4d_package.SubSetDatabaseDefaults(acDb);
+                c4d_package.Name = "4D (4) Package";
+                c4d_package.Description = "Package code for 4d coding";
+                c4d_package.DataType = Autodesk.Aec.PropertyData.DataType.Text;
+                c4d_package.DefaultData = "NON";
+
+                codeset4d.Definitions.Add(c4d_package);
 
                 using (Transaction tr = acDb.TransactionManager.StartTransaction())
                 {
@@ -110,7 +141,6 @@ namespace ElectricalSiteAutoBuild
 
             #endregion PropertySet Definitions
 
-
             #region Foundations
 
             // create FND
@@ -130,7 +160,6 @@ namespace ElectricalSiteAutoBuild
                         btr.AppendEntity(Foundation(2, 0.8, ElevationTOC));
 
                         AddNodeAttributes(btr, FND, true);
-                        Add4dCodeAttributes(btr);
 
                         tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
                         bt.Add(btr);
@@ -164,7 +193,6 @@ namespace ElectricalSiteAutoBuild
                         btr.AppendEntity(Support(SizePlateEquipA, DepthPlate, height, RadiusSupportA, Point2d.Origin));
 
                         AddNodeAttributes(btr, SUP1A, true);
-                        Add4dCodeAttributes(btr);
 
                         tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
                         bt.Add(btr);
@@ -193,7 +221,6 @@ namespace ElectricalSiteAutoBuild
                         btr.AppendEntity(Support(SizePlateEquipB, DepthPlate, height, RadiusSupportB, Point2d.Origin));
 
                         AddNodeAttributes(btr, SUP1B, true);
-                        Add4dCodeAttributes(btr);
 
                         tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
                         bt.Add(btr);
@@ -222,7 +249,6 @@ namespace ElectricalSiteAutoBuild
                         btr.AppendEntity(Support(SizePlateEquipA, DepthPlate, height, RadiusSupportA, Point2d.Origin));
 
                         AddNodeAttributes(btr, SUP2A, true);
-                        Add4dCodeAttributes(btr);
 
                         tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
                         bt.Add(btr);
@@ -251,7 +277,6 @@ namespace ElectricalSiteAutoBuild
                         btr.AppendEntity(Support(SizePlateEquipB, DepthPlate, height, RadiusSupportB, Point2d.Origin));
 
                         AddNodeAttributes(btr, SUP2B, true);
-                        Add4dCodeAttributes(btr);
 
                         tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
                         bt.Add(btr);
@@ -295,7 +320,6 @@ namespace ElectricalSiteAutoBuild
                         btr.AppendEntity(frustum);
 
                         AddNodeAttributes(btr, PIB, true);
-                        Add4dCodeAttributes(btr);
 
                         tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
                         bt.Add(btr);
@@ -314,116 +338,9 @@ namespace ElectricalSiteAutoBuild
             #endregion Equipment
 
 
-
         }
 
         #region Model Build Methods
-
-        public ObjectId InsertModelFeatureGroup(string GroupNameBase, string[] FeatureList, Point3d placement, double orientation)
-        {
-            // chain a string of blockrefs from lastAttPnt to ThisInsPnt
-            // add all to a new group, return the objId ofthe group
-            //
-            Database acDb = Application.DocumentManager.MdiActiveDocument.Database;
-            ObjectId returnId = new ObjectId();
-
-            using (Transaction tr = acDb.TransactionManager.StartTransaction())
-            {
-                DBDictionary gd = (DBDictionary)tr.GetObject(acDb.GroupDictionaryId, OpenMode.ForRead);
-
-                int q = 1;
-                while (gd.Contains(GroupNameBase + q.ToString()))
-                {
-                    q++;
-                }
-                string gname = GroupNameBase + q.ToString();
-
-                Group grp = new Group(gname, true);
-
-                gd.UpgradeOpen();
-                ObjectId grpId = gd.SetAt(gname, grp);
-                tr.AddNewlyCreatedDBObject(grp, true);
-
-                BlockTable bt = (BlockTable)tr.GetObject(acDb.BlockTableId, OpenMode.ForRead);
-                BlockTableRecord modelspace = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite);
-
-                ObjectIdCollection blockRefIds = new ObjectIdCollection();
-                ObjectId blockRefId = new ObjectId();
-
-                Point3d currentAttPnt = placement;
-
-                for (int i = 0; i < FeatureList.Length; i++)
-                {
-                    if (bt.Has(FeatureList[i]))
-                    {
-                        BlockTableRecord blockDef = (BlockTableRecord)bt[FeatureList[i]].GetObject(OpenMode.ForRead);
-                        
-                        using (BlockReference blockRef = new BlockReference(currentAttPnt, blockDef.ObjectId))
-                        {
-
-                            switch (i) // assign layer
-                            {
-                                case 0:
-                                    blockRef.Layer = "_Esab_Model_Foundations";
-                                    break;
-                                case 1:
-                                    blockRef.Layer = "_Esab_Model_Supports";
-                                    break;
-                                case 2:
-                                    blockRef.Layer = "_Esab_Model_Equipment";
-                                    break;
-                                default:
-                                    blockRef.Layer = "_Esab_Model_General";
-                                    break;
-                            }
-
-                            blockRef.Rotation = orientation;
-                            blockRefId = modelspace.AppendEntity(blockRef);
-                            tr.AddNewlyCreatedDBObject(blockRef, true);
-
-                            // transfer attribute definitions into new block
-                            //
-                            foreach (ObjectId id in blockDef)
-                            {
-                                DBObject obj = id.GetObject(OpenMode.ForRead);
-                                AttributeDefinition attdef = obj as AttributeDefinition;
-
-                                if ((attdef != null) && (!attdef.Constant))
-                                {
-                                    using (AttributeReference attref = new AttributeReference())
-                                    {
-                                        attref.SetAttributeFromBlock(attdef, blockRef.BlockTransform);
-                                        blockRef.AttributeCollection.AppendAttribute(attref);
-                                        tr.AddNewlyCreatedDBObject(attref, true);
-                                    }
-                                }
-                            }
-
-                            // get the new atribute references
-                            // and get 3d location of ATTPNT
-                            //
-                            AttributeCollection attcol = blockRef.AttributeCollection;
-                            foreach (ObjectId attId in attcol)
-                            {
-                                AttributeReference attref = (AttributeReference)tr.GetObject(attId, OpenMode.ForRead);
-                                if (attref.Tag == "ATTPNT")
-                                    currentAttPnt = attref.Position;
-                            }
-
-                            blockRefIds.Add(blockRefId);
-
-                        }
-                    }
-                }
-            
-                grp.InsertAt(0, blockRefIds);
-                returnId = grp.ObjectId;
-                tr.Commit();
-
-            }
-
-            return returnId;
-        }
 
         public Point3d InsertModelFeatureSet(string[] FeatureList, Point3d placement, double orientation, EsabRoute route, string zone4d)
         {
@@ -432,6 +349,9 @@ namespace ElectricalSiteAutoBuild
             //
             Database acDb = Application.DocumentManager.MdiActiveDocument.Database;
             Point3d EndPoint = new Point3d();
+            DBObject obj;
+            string assignPack4d = "NON";
+            string assignZone4d; 
 
             using (Transaction tr = acDb.TransactionManager.StartTransaction())
             {
@@ -458,15 +378,23 @@ namespace ElectricalSiteAutoBuild
                             {
                                 case 0:
                                     blockRef.Layer = "_Esab_Model_Foundations";
+                                    assignPack4d = "FND";
+                                    assignZone4d = zone4d;
                                     break;
                                 case 1:
                                     blockRef.Layer = "_Esab_Model_Supports";
+                                    assignPack4d = "SUP";
+                                    assignZone4d = (Constants.SupportsByArea) ? "SUP" : zone4d;
                                     break;
                                 case 2:
                                     blockRef.Layer = "_Esab_Model_Equipment";
+                                    assignPack4d = "EQU";
+                                    assignZone4d = zone4d;
                                     break;
                                 default:
                                     blockRef.Layer = "_Esab_Model_General";
+                                    assignPack4d = "NON";
+                                    assignZone4d = zone4d;
                                     break;
                             }
 
@@ -476,6 +404,15 @@ namespace ElectricalSiteAutoBuild
 
                             // transfer attribute definitions into new block
                             //
+                            AttDefTransfer(tr, blockDef, blockRef);
+
+                            obj = blockRef as DBObject;
+
+                            ApplyCODESET4D(acDb, tr, obj);
+                            UpdateCODESET4D(acDb, tr, obj, route.codelist4D_region, route.codelist4D_area, assignZone4d, assignPack4d);
+
+
+/*
                             foreach (ObjectId id in blockDef)
                             {
                                 DBObject obj = id.GetObject(OpenMode.ForRead);
@@ -486,17 +423,12 @@ namespace ElectricalSiteAutoBuild
                                     using (AttributeReference attref = new AttributeReference())
                                     {
                                         attref.SetAttributeFromBlock(attdef, blockRef.BlockTransform);
-
-                                        if (attref.Tag == "4D_Region") attref.TextString = route.codelist4D_region;
-                                        if (attref.Tag == "4D_Area") attref.TextString = route.codelist4D_area;
-                                        if (attref.Tag == "4D_Zone") attref.TextString = (i == 1) ? "SUP" : zone4d;
-                                        if (attref.Tag == "4D_Package") attref.TextString = (i == 0) ? "FND" : (i == 1) ? "SUP" : (i == 2) ? "EQU" : "NON";
-
                                         blockRef.AttributeCollection.AppendAttribute(attref);
                                         tr.AddNewlyCreatedDBObject(attref, true);
                                     }
                                 }
                             }
+*/
 
                             // get the new atribute references
                             // and get 3d location of ATTPNT
@@ -521,46 +453,17 @@ namespace ElectricalSiteAutoBuild
 
             }
 
+
             return EndPoint;
 
         }
 
-        public void CreateInsertBusbar(string NameBase, Point3d start, Point3d end, Color color, EsabRoute route)
+        public void InsertConductor(Point3d start,  Point3d end, Color color, EsabRoute route)
         {
-
             Database acDb = Application.DocumentManager.MdiActiveDocument.Database;
-            ObjectId blockDefId = new ObjectId();
-            ObjectId blockRefId = new ObjectId();
-            string BlockName;
+            DBObject obj;
 
-
-            using (Transaction tr = acDb.TransactionManager.StartTransaction())
-            {
-                BlockTable bt = (BlockTable)tr.GetObject(acDb.BlockTableId, OpenMode.ForRead);
-                BlockName = NextFreeBlockName(bt, NameBase);
-
-                // create unique busbar block definition
-                //
-                using (BlockTableRecord blockDef = new BlockTableRecord())
-                {
-                    blockDef.Name = BlockName;
-                    blockDef.Origin = Point3d.Origin;
-
-                    Solid3d Busbar = CylinderTargetted(RadiusBusSTD, start, end, true);
-                    Busbar.ColorIndex = 0;
-                    blockDef.AppendEntity(Busbar);
-
-                    Add4dCodeAttributes(blockDef);
-
-                    tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
-                    blockDefId = bt.Add(blockDef);
-                    tr.AddNewlyCreatedDBObject(blockDef, true);
-                }
-
-                tr.Commit();
-            }
-
-            // insert block reference
+            // create conductor and add to db
             //
             using (Transaction tr = acDb.TransactionManager.StartTransaction())
             {
@@ -568,50 +471,21 @@ namespace ElectricalSiteAutoBuild
                 BlockTable bt = (BlockTable)tr.GetObject(acDb.BlockTableId, OpenMode.ForRead);
                 BlockTableRecord modelspace = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite);
 
-                BlockTableRecord blockDef = (BlockTableRecord)bt[BlockName].GetObject(OpenMode.ForRead);
-
-                using (BlockReference blockRef = new BlockReference(start, blockDef.ObjectId))
-                {
-                    blockRef.Layer = "_Esab_Model_Conductors";
-                    blockRef.Color = color;
-                    blockRefId = modelspace.AppendEntity(blockRef);
-                    tr.AddNewlyCreatedDBObject(blockRef, true);
-
-                    // transfer attribute definitions into new block
-                    //
-                    foreach (ObjectId id in blockDef)
-                    {
-                        DBObject obj = id.GetObject(OpenMode.ForRead);
-                        AttributeDefinition attdef = obj as AttributeDefinition;
-
-                        if ((attdef != null) && (!attdef.Constant))
-                        {
-                            using (AttributeReference attref = new AttributeReference())
-                            {
-                                attref.SetAttributeFromBlock(attdef, blockRef.BlockTransform);
-
-                                if (attref.Tag == "4D_Region") attref.TextString = route.codelist4D_region;
-                                if (attref.Tag == "4D_Area") attref.TextString = route.codelist4D_area;
-                                if (attref.Tag == "4D_Zone") attref.TextString = "CON";
-                                if (attref.Tag == "4D_Package") attref.TextString = Enum.GetName(typeof(EsabConductorType), route.defaultConductorType);
-
-                                blockRef.AttributeCollection.AppendAttribute(attref);
-                                tr.AddNewlyCreatedDBObject(attref, true);
-                            }
-                        }
-
-                    }
-
-                }
+                Solid3d Busbar = CylinderTargetted(RadiusBusSTD, start, end, false);
+                Busbar.Color = color;
+                obj = Busbar as DBObject;
+                modelspace.AppendEntity(Busbar);
+                tr.AddNewlyCreatedDBObject(Busbar, true);
 
                 tr.Commit();
-
             }
+
+            ApplyCODESET4D(obj);
+            UpdateCODESET4D(obj, route.codelist4D_region, route.codelist4D_area, "CND", "CON");
 
         }
 
-
-        public ObjectId BuildSinglePhaseRoute( string GroupNameBase, EsabRoute route, Mline mline)
+        public ObjectId BuildSinglePhaseRoute(EsabRoute route, Mline mline)
         {
 
             Database acDb = Application.DocumentManager.MdiActiveDocument.Database;
@@ -636,13 +510,13 @@ namespace ElectricalSiteAutoBuild
                 //
                 if (i == 0)
                 {
-                    pathDirection = mline.VertexAt(0) - mline.VertexAt(1);
-                    pathOrientation = pathDirection.GetAngleTo(Vector3d.XAxis);
+                    pathDirection = mline.VertexAt(1) - mline.VertexAt(0);
+                    pathOrientation = AngleFromX(pathDirection);
                 }
                 else
                 {
-                    pathDirection = mline.VertexAt(i-1) - mline.VertexAt(i);
-                    pathOrientation = pathDirection.GetAngleTo(Vector3d.XAxis);
+                    pathDirection = mline.VertexAt(i) - mline.VertexAt(i-1);
+                    pathOrientation = AngleFromX(pathDirection);
                 }
 
                 currentPoint = mline.VertexAt(i);
@@ -677,7 +551,7 @@ namespace ElectricalSiteAutoBuild
             
             for (int i = 1; i < EndPoints.Count; i++)
             {
-                CreateInsertBusbar("BUS", EndPoints[i - 1], EndPoints[i], Color.FromRgb(255, 190, 190), route);
+                InsertConductor(EndPoints[i - 1], EndPoints[i], Color.FromRgb(255, 190, 190), route);
             }
             
             return ObjectId.Null;
@@ -763,6 +637,132 @@ namespace ElectricalSiteAutoBuild
             btr.AppendEntity(attdef);
 
         }
+
+        public void AttDefTransfer(Transaction tr, BlockTableRecord blockDef, BlockReference blockRef)
+        {
+            // transfer attribute definitions into new block
+            //
+            foreach (ObjectId id in blockDef)
+            {
+                DBObject obj = id.GetObject(OpenMode.ForRead);
+                AttributeDefinition attdef = obj as AttributeDefinition;
+
+                if ((attdef != null) && (!attdef.Constant))
+                {
+                    using (AttributeReference attref = new AttributeReference())
+                    {
+                        attref.SetAttributeFromBlock(attdef, blockRef.BlockTransform);
+                        blockRef.AttributeCollection.AppendAttribute(attref);
+                        tr.AddNewlyCreatedDBObject(attref, true);
+                    }
+                }
+            }
+        }
+
+        public void ApplyCODESET4D(DBObject obj)
+        {
+            Database acDb = Application.DocumentManager.MdiActiveDocument.Database;
+
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
+            {
+                DictionaryPropertySetDefinitions dictPsd = new DictionaryPropertySetDefinitions(acDb);
+                ObjectId psetDefId = dictPsd.GetAt("CODESET4D");
+                try
+                {
+                    tr.GetObject(obj.ObjectId, OpenMode.ForWrite);
+                    PropertyDataServices.AddPropertySet(obj, psetDefId);
+
+                }
+                catch (Autodesk.AutoCAD.Runtime.Exception ex)
+                {
+                    Application.DocumentManager.MdiActiveDocument.Editor.WriteMessage(ex.Message);
+                }
+                //PropertyDataServices.AddPropertySet(obj, psetDefId);
+                tr.Commit();
+
+            }
+        }
+
+        public void ApplyCODESET4D(Database acDb, Transaction tr, DBObject obj)
+        {
+            DictionaryPropertySetDefinitions dictPsd = new DictionaryPropertySetDefinitions(acDb);
+            ObjectId psetDefId = dictPsd.GetAt("CODESET4D");
+            try
+            {
+                tr.GetObject(obj.ObjectId, OpenMode.ForWrite);
+                PropertyDataServices.AddPropertySet(obj, psetDefId);
+
+            }
+            catch (Autodesk.AutoCAD.Runtime.Exception ex)
+            {
+                Application.DocumentManager.MdiActiveDocument.Editor.WriteMessage(ex.Message);
+            }
+
+        }
+
+        public void UpdateCODESET4D(DBObject obj, string rg, string ar, string zn, string pk)
+        {
+            Database acDb = Application.DocumentManager.MdiActiveDocument.Database;
+
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
+            {
+                DictionaryPropertySetDefinitions dictPsd = new DictionaryPropertySetDefinitions(acDb);
+                ObjectId psetDefId = dictPsd.GetAt("CODESET4D");
+
+                try
+                {
+                    //tr.GetObject(obj.ObjectId, OpenMode.ForWrite);
+                    ObjectId objPropSetId = PropertyDataServices.GetPropertySet(obj, psetDefId);
+                    PropertySet propset = (PropertySet)objPropSetId.GetObject(OpenMode.ForWrite);
+                    propset.SetAt(0, rg);
+                    propset.SetAt(1, ar);
+                    propset.SetAt(2, zn);
+                    propset.SetAt(3, pk);
+
+
+                }
+                catch (Autodesk.AutoCAD.Runtime.Exception ex)
+                {
+                    Application.DocumentManager.MdiActiveDocument.Editor.WriteMessage(ex.Message);
+                }
+
+                tr.Commit();
+
+            }
+
+        }
+
+        public void UpdateCODESET4D(Database acDb, Transaction tr, DBObject obj, string rg, string ar, string zn, string pk)
+        {
+            DictionaryPropertySetDefinitions dictPsd = new DictionaryPropertySetDefinitions(acDb);
+            ObjectId psetDefId = dictPsd.GetAt("CODESET4D");
+
+            try
+            {
+                //tr.GetObject(obj.ObjectId, OpenMode.ForWrite);
+                ObjectId objPropSetId = PropertyDataServices.GetPropertySet(obj, psetDefId);
+                PropertySet propset = (PropertySet)objPropSetId.GetObject(OpenMode.ForWrite);
+                propset.SetAt(0, rg);
+                propset.SetAt(1, ar);
+                propset.SetAt(2, zn);
+                propset.SetAt(3, pk);
+
+            }
+            catch (Autodesk.AutoCAD.Runtime.Exception ex)
+            {
+                Application.DocumentManager.MdiActiveDocument.Editor.WriteMessage(ex.Message);
+            }
+
+        }
+
+
+        public double AngleFromX(Vector3d v)
+        {
+            double mag = v.Length;
+            double baseAng = (v.Y < 0) ? (2 * Math.PI) - Math.Acos(v.X / mag) : Math.Acos(v.X / mag);
+            return baseAng;
+        }
+
 
         public string NextFreeBlockName(BlockTable bt, string nameBase, int startFrom = 1)
         {
@@ -941,15 +941,6 @@ namespace ElectricalSiteAutoBuild
             }
 
         }
-
-        public struct CodeList4d
-        {
-            public string region;
-            public string area;
-            public string zone;
-            public string package;
-        }
-        
 
     }
 }

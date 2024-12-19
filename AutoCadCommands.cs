@@ -5,6 +5,8 @@ using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.Geometry;
+using Autodesk.Aec.PropertyData.DatabaseServices;
+using System.Collections.Specialized;
 
 
 namespace ElectricalSiteAutoBuild
@@ -15,160 +17,17 @@ namespace ElectricalSiteAutoBuild
 
         #region TestCommands
 
-        [CommandMethod("MLTEST01")]
-        public void mltest01()
+        [CommandMethod("angtest")]
+        public void angtest()
         {
-            Document acDoc = Application.DocumentManager.MdiActiveDocument;
-            Database acDb = acDoc.Database;
-            Editor acEd = acDoc.Editor;
-
-            EditorMethods ed = new EditorMethods();
-
-            PromptEntityOptions peo = new PromptEntityOptions("Select LW Polyline: ");
-            peo.SetRejectMessage("\nOnly LW Poly entities allowed: ");
-            peo.AddAllowedClass(typeof(Polyline), true);
-            PromptEntityResult per = acEd.GetEntity(peo);
-
-            if (per.Status != PromptStatus.OK)
-                return;
-
-            using (Transaction tr = acDb.TransactionManager.StartTransaction())
-            {
-                Polyline pline = (Polyline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
-
-                DBDictionary mlDict = (DBDictionary)tr.GetObject(acDb.MLStyleDictionaryId, OpenMode.ForRead);
-
-
-
-                Mline mline = new Mline();
-                mline.Normal = pline.Normal;
-                mline.Style = mlDict.GetAt("esabRYB");
-                mline.Scale = 1;
-                mline.Justification = MlineJustification.Zero;
-                mline.Layer = "_Esab_Routes";
-
-                for (int i = 0; i < pline.NumberOfVertices; i++)
-                {
-                    mline.AppendSegment(pline.GetPoint3dAt(i));
-                }
-
-                BlockTableRecord btr = (BlockTableRecord)tr.GetObject(acDb.CurrentSpaceId, OpenMode.ForWrite);
-                btr.AppendEntity(mline);
-                tr.AddNewlyCreatedDBObject(mline, true);
-
-                //DBObject dbo = (DBObject)tr.GetObject(pline.ObjectId, OpenMode.ForWrite);
-                //dbo.Erase();
-
-                pline.UpgradeOpen();
-                pline.Erase();
-                
-
-
-                tr.Commit();
-                
-
-            }
-        }
-
-
-        [CommandMethod("ATTBLK1")]
-        public void Attblk1()
-        {
-            Document acDoc = Application.DocumentManager.MdiActiveDocument;
-            Database acDb = acDoc.Database;
-            Editor acEd = acDoc.Editor;
-
-            EditorMethods ed = new EditorMethods();
-
-            using (Transaction tr = acDb.TransactionManager.StartTransaction())
-            {
-                BlockTable bt = (BlockTable)tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
-
-                if (!bt.Has("FND"))
-                    return;
-
-                BlockTableRecord modelspace = (BlockTableRecord)bt[BlockTableRecord.ModelSpace].GetObject(OpenMode.ForWrite);
-                BlockTableRecord blockdef = (BlockTableRecord)bt["FND"].GetObject(OpenMode.ForRead);
-
-                using (BlockReference blockref = new BlockReference(Point3d.Origin, blockdef.ObjectId))
-                {
-                    modelspace.AppendEntity(blockref);
-                    tr.AddNewlyCreatedDBObject(blockref, true);
-
-                    foreach (ObjectId id in blockdef)
-                    {
-                        DBObject obj = id.GetObject(OpenMode.ForRead);
-                        AttributeDefinition attdef = obj as AttributeDefinition;
-
-                        if ((attdef != null) && (!attdef.Constant))
-                        {
-                            using (AttributeReference attref = new AttributeReference())
-                            {
-                                attref.SetAttributeFromBlock(attdef, blockref.BlockTransform);
-                                blockref.AttributeCollection.AppendAttribute(attref);
-                                tr.AddNewlyCreatedDBObject(attref, true);
-                            }
-                        }
-
-
-                    }
-                }
-
-                tr.Commit();
-            }
-
-        }
-
-
-        [CommandMethod("ATTBLK2")]
-        public void Attblk2()
-        {
-            Document acDoc = Application.DocumentManager.MdiActiveDocument;
-            Database acDb = acDoc.Database;
-            Editor acEd = acDoc.Editor;
-
-            EditorMethods ed = new EditorMethods();
-
-            PromptEntityOptions peo = new PromptEntityOptions("Select BlkRef: ");
-            peo.SetRejectMessage("\nOnly BlkRef entities allowed: ");
-            peo.AddAllowedClass(typeof(BlockReference), true);
-            PromptEntityResult per = acEd.GetEntity(peo);
-
-            if (per.Status != PromptStatus.OK)
-                return;
-
-            using (Transaction tr = acDb.TransactionManager.StartTransaction())
-            {
-                BlockReference blkref = (BlockReference)tr.GetObject(per.ObjectId, OpenMode.ForRead);
-
-               
-                
-                
-                AttributeCollection attcol = blkref.AttributeCollection;
-                foreach (ObjectId attId in attcol)
-                {
-                    AttributeReference attref = (AttributeReference)tr.GetObject(attId, OpenMode.ForRead);
-                    acEd.WriteMessage($"\n{attref.Position.ToString()}\n");
-                    acEd.WriteMessage($"\nTag: {attref.Tag}, Pos: {attref.AlignmentPoint.ToString()}\n");
-                }
-
-                tr.Commit();
-            }
-
-        }
-
-        [CommandMethod("placegroup")]
-        public void placegroup()
-        {
+            Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
             ModelMethods mm = new ModelMethods();
 
-            ObjectId grpId = new ObjectId();
-
-            grpId = mm.InsertModelFeatureGroup("TESTGROUP", new string[] { "FND", "SUP1B", "PIB" }, new Point3d(10,10,3), Math.PI / 4);
-            grpId = mm.InsertModelFeatureGroup("TESTGROUP", new string[] { "FND", "SUP2B", "PIB" }, new Point3d(5, 5, 3), Math.PI / 4);
-            grpId = mm.InsertModelFeatureGroup("TESTGROUP", new string[] { "FND", "SUP1B", "PIB" }, new Point3d(10, 5, 3), Math.PI / 4);
+            acEd.WriteMessage($"\n1,.5: { mm.AngleFromX(new Vector3d(1,0.5,0)) }");
+            acEd.WriteMessage($"\n1,-.5: {mm.AngleFromX(new Vector3d(1, -0.5, 0))}");
+            acEd.WriteMessage($"\n-1,-.5: {mm.AngleFromX(new Vector3d(-1, -0.5, 0))}");
+            acEd.WriteMessage($"\n-1,.5: {mm.AngleFromX(new Vector3d(-1, 0.5, 0))}");
         }
-
 
         #endregion TestCommands
 
@@ -591,7 +450,7 @@ namespace ElectricalSiteAutoBuild
                 tr.Commit();
             }
 
-            ObjectId returnId = mm.BuildSinglePhaseRoute("NEWTEST", route, mline);
+            ObjectId returnId = mm.BuildSinglePhaseRoute(route, mline);
 
         }
 

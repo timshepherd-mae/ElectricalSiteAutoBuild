@@ -17,8 +17,18 @@ namespace ElectricalSiteAutoBuild
         // define app name for extended dictionary content
         //
         public const string XappName = "ESAB";
+        
+        // show objectIds in inspection window
+        //
         public const bool ShowObjIds = true;
+        
+        // srart address of featureobjIds in Xdata
+        //
         public const int XpointerRoute = 9;
+
+        // assign supports by area not zone
+        //
+        public const bool SupportsByArea = true;
 
     }
 
