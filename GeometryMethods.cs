@@ -8,6 +8,7 @@ using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.Colors;
 
+
 namespace ElectricalSiteAutoBuild
 {
     public class GeometryMethods
@@ -31,6 +32,7 @@ namespace ElectricalSiteAutoBuild
                 LinetypeTable ltt = (LinetypeTable)tr.GetObject(acDb.LinetypeTableId, OpenMode.ForRead);
 
                 ObjectId RouteLT = (ltt.Has("Dashed")) ? ltt["Dashed"] : ltt["Continuous"];
+                ObjectId ContLT = ltt["Continuous"];
 
                 if (!lt.Has("_Esab_Features"))
                 {
@@ -41,6 +43,7 @@ namespace ElectricalSiteAutoBuild
                         lcol = Color.FromColorIndex(ColorMethod.ByAci, 3);
                         lyr.Color = lcol;
                         lyr.LineWeight = LineWeight.LineWeight025;
+                        lyr.LinetypeObjectId = ContLT;
 
                         lt.Add(lyr);
                         tr.AddNewlyCreatedDBObject(lyr, true);
@@ -57,6 +60,7 @@ namespace ElectricalSiteAutoBuild
                         lcol = Color.FromColorIndex(ColorMethod.ByAci, 6);
                         lyr.Color = lcol;
                         lyr.LineWeight = LineWeight.LineWeight025;
+                        lyr.LinetypeObjectId = ContLT;
 
                         lt.Add(lyr);
                         tr.AddNewlyCreatedDBObject(lyr, true);
@@ -73,6 +77,7 @@ namespace ElectricalSiteAutoBuild
                         lcol = Color.FromColorIndex(ColorMethod.ByAci, 4);
                         lyr.Color = lcol;
                         lyr.LineWeight = LineWeight.LineWeight025;
+                        lyr.LinetypeObjectId = ContLT;
 
                         lt.Add(lyr);
                         tr.AddNewlyCreatedDBObject(lyr, true);
@@ -97,6 +102,89 @@ namespace ElectricalSiteAutoBuild
                     }
                 }
 
+                if (!lt.Has("_Esab_Model_General"))
+                {
+                    using (LayerTableRecord lyr = new LayerTableRecord())
+                    {
+                        lyr.Name = "_Esab_Model_General";
+                        Color lcol = new Color();
+                        lcol = Color.FromColorIndex(ColorMethod.ByAci, 7);
+                        lyr.Color = lcol;
+                        lyr.LineWeight = LineWeight.LineWeight025;
+                        lyr.LinetypeObjectId = ContLT;
+
+                        lt.Add(lyr);
+                        tr.AddNewlyCreatedDBObject(lyr, true);
+
+                    }
+                }
+                if (!lt.Has("_Esab_Model_Equipment"))
+                {
+                    using (LayerTableRecord lyr = new LayerTableRecord())
+                    {
+                        lyr.Name = "_Esab_Model_Equipment";
+                        Color lcol = new Color();
+                        lcol = Color.FromColorIndex(ColorMethod.ByAci, 9);
+                        lyr.Color = lcol;
+                        lyr.LineWeight = LineWeight.LineWeight025;
+                        lyr.LinetypeObjectId = ContLT;
+
+                        lt.Add(lyr);
+                        tr.AddNewlyCreatedDBObject(lyr, true);
+
+                    }
+                }
+
+                if (!lt.Has("_Esab_Model_Supports"))
+                {
+                    using (LayerTableRecord lyr = new LayerTableRecord())
+                    {
+                        lyr.Name = "_Esab_Model_Supports";
+                        Color lcol = new Color();
+                        lcol = Color.FromRgb(255,255,255);
+                        lyr.Color = lcol;
+                        lyr.LineWeight = LineWeight.LineWeight025;
+                        lyr.LinetypeObjectId = ContLT;
+
+                        lt.Add(lyr);
+                        tr.AddNewlyCreatedDBObject(lyr, true);
+
+                    }
+                }
+
+                if (!lt.Has("_Esab_Model_Foundations"))
+                {
+                    using (LayerTableRecord lyr = new LayerTableRecord())
+                    {
+                        lyr.Name = "_Esab_Model_Foundations";
+                        Color lcol = new Color();
+                        lcol = Color.FromColorIndex(ColorMethod.ByAci, 8);
+                        lyr.Color = lcol;
+                        lyr.LineWeight = LineWeight.LineWeight025;
+                        lyr.LinetypeObjectId = ContLT;
+
+                        lt.Add(lyr);
+                        tr.AddNewlyCreatedDBObject(lyr, true);
+
+                    }
+                }
+
+                if (!lt.Has("_Esab_Model_Conductors"))
+                {
+                    using (LayerTableRecord lyr = new LayerTableRecord())
+                    {
+                        lyr.Name = "_Esab_Model_Conductors";
+                        Color lcol = new Color();
+                        lcol = Color.FromColorIndex(ColorMethod.ByAci, 9);
+                        lyr.Color = lcol;
+                        lyr.LineWeight = LineWeight.LineWeight025;
+                        lyr.LinetypeObjectId = ContLT;
+
+                        lt.Add(lyr);
+                        tr.AddNewlyCreatedDBObject(lyr, true);
+
+                    }
+                }
                 tr.Commit();
             }
 
@@ -465,6 +553,7 @@ namespace ElectricalSiteAutoBuild
             }
 
             #endregion MLine Styles
+
 
         }
 

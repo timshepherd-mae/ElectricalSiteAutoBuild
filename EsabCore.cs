@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
+using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 
@@ -16,9 +17,22 @@ namespace ElectricalSiteAutoBuild
         // define app name for extended dictionary content
         //
         public const string XappName = "ESAB";
+        
+        // show objectIds in inspection window
+        //
         public const bool ShowObjIds = true;
+        
+        // srart address of featureobjIds in Xdata
+        //
+        public const int XpointerRoute = 9;
+
+        // assign supports by area not zone
+        //
+        public const bool SupportsByArea = true;
 
     }
+
+    #region framework classes
 
     public class EsabFeature
     {
@@ -75,6 +89,8 @@ namespace ElectricalSiteAutoBuild
         public double phasesep = 0;
         public EsabPhaseColour phasecol;
         public EsabConductorType defaultConductorType;
+        public string codelist4D_region;
+        public string codelist4D_area;
         public ObjectIdCollection featureIds = new ObjectIdCollection();
 
         // constructors
@@ -85,7 +101,7 @@ namespace ElectricalSiteAutoBuild
 
         public void ToXdictionary(DBObject dbo)
         {
-            int tvCount = featureIds.Count + 7;
+            int tvCount = featureIds.Count + Constants.XpointerRoute;
             TypedValue[] xdata = new TypedValue[tvCount];
 
             xdata[0] = new TypedValue((int)DxfCode.SoftPointerId, id);              // route ent id
@@ -95,10 +111,12 @@ namespace ElectricalSiteAutoBuild
             xdata[4] = new TypedValue((int)DxfCode.Real, phasesep);                // threephase seperation distance
             xdata[5] = new TypedValue((int)DxfCode.Int32, phasecol);                // phase color
             xdata[6] = new TypedValue((int)DxfCode.Int32, defaultConductorType);    // conductor
+            xdata[7] = new TypedValue((int)DxfCode.Text, codelist4D_region);
+            xdata[8] = new TypedValue((int)DxfCode.Text, codelist4D_area);
 
             for (int i = 0; i < featureIds.Count; i++)
             {
-                xdata[i + 7] = new TypedValue((int)DxfCode.SoftPointerId, featureIds[i]);
+                xdata[i + Constants.XpointerRoute] = new TypedValue((int)DxfCode.SoftPointerId, featureIds[i]);
             }
 
             dbo.SetXDictionaryXrecordData(Constants.XappName, xdata);
@@ -119,8 +137,10 @@ namespace ElectricalSiteAutoBuild
                 phasesep = (double)data[4].Value;
                 phasecol = (EsabPhaseColour)Enum.ToObject(typeof(EsabPhaseColour), data[5].Value);
                 defaultConductorType = (EsabConductorType)Enum.ToObject(typeof(EsabConductorType), data[6].Value);
+                codelist4D_region = (string)data[7].Value;
+                codelist4D_area = (string)data[8].Value;
 
-                for (int i = 7; i < data.Length; i++)
+                for (int i = Constants.XpointerRoute; i < data.Length; i++)
                 {
                         featureIds.Add((ObjectId)data[i].Value);
                 }
@@ -248,12 +268,12 @@ namespace ElectricalSiteAutoBuild
 
     public enum EsabJunctionType
     {
-        POST, FORK, LinkTo
+        POST, FORK, PANT, LinkTo
     }
 
     public enum EsabConductorType
     {
-        GIB, Busbar, Cable
+        GIB, BUS, CAB
     }
  
     public enum EsabPhaseType
@@ -269,8 +289,24 @@ namespace ElectricalSiteAutoBuild
     public enum EsabXdType
     {
         Route, Feature, Conductor, Terminator, Junction
-    } 
+    }
 
     #endregion Enumerators
+
+    #endregion framework classes
+
+    #region modelclasses
+
+    public class EsabModelBase
+    {
+        public DBObject model0;
+        public Point3d[] attachPoints;
+
+
+    }
+
+
+    #endregion model classes
+
 
 }

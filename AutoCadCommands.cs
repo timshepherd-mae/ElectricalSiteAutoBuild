@@ -5,6 +5,8 @@ using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.Geometry;
+using Autodesk.Aec.PropertyData.DatabaseServices;
+using System.Collections.Specialized;
 
 
 namespace ElectricalSiteAutoBuild
@@ -15,69 +17,29 @@ namespace ElectricalSiteAutoBuild
 
         #region TestCommands
 
-        [CommandMethod("MLTEST01")]
-        public void mltest01()
+        [CommandMethod("angtest")]
+        public void angtest()
         {
-            Document acDoc = Application.DocumentManager.MdiActiveDocument;
-            Database acDb = acDoc.Database;
-            Editor acEd = acDoc.Editor;
+            Editor acEd = Application.DocumentManager.MdiActiveDocument.Editor;
+            ModelMethods mm = new ModelMethods();
 
-            EditorMethods ed = new EditorMethods();
-
-            PromptEntityOptions peo = new PromptEntityOptions("Select LW Polyline: ");
-            peo.SetRejectMessage("\nOnly LW Poly entities allowed: ");
-            peo.AddAllowedClass(typeof(Polyline), true);
-            PromptEntityResult per = acEd.GetEntity(peo);
-
-            if (per.Status != PromptStatus.OK)
-                return;
-
-            using (Transaction tr = acDb.TransactionManager.StartTransaction())
-            {
-                Polyline pline = (Polyline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
-
-                DBDictionary mlDict = (DBDictionary)tr.GetObject(acDb.MLStyleDictionaryId, OpenMode.ForRead);
-
-
-
-                Mline mline = new Mline();
-                mline.Normal = pline.Normal;
-                mline.Style = mlDict.GetAt("esabRYB");
-                mline.Scale = 1;
-                mline.Justification = MlineJustification.Zero;
-                mline.Layer = "_Esab_Routes";
-
-                for (int i = 0; i < pline.NumberOfVertices; i++)
-                {
-                    mline.AppendSegment(pline.GetPoint3dAt(i));
-                }
-
-                BlockTableRecord btr = (BlockTableRecord)tr.GetObject(acDb.CurrentSpaceId, OpenMode.ForWrite);
-                btr.AppendEntity(mline);
-                tr.AddNewlyCreatedDBObject(mline, true);
-
-                //DBObject dbo = (DBObject)tr.GetObject(pline.ObjectId, OpenMode.ForWrite);
-                //dbo.Erase();
-
-                pline.UpgradeOpen();
-                pline.Erase();
-                
-
-
-                tr.Commit();
-                
-
-            }
+            acEd.WriteMessage($"\n1,.5: { mm.AngleFromX(new Vector3d(1,0.5,0)) }");
+            acEd.WriteMessage($"\n1,-.5: {mm.AngleFromX(new Vector3d(1, -0.5, 0))}");
+            acEd.WriteMessage($"\n-1,-.5: {mm.AngleFromX(new Vector3d(-1, -0.5, 0))}");
+            acEd.WriteMessage($"\n-1,.5: {mm.AngleFromX(new Vector3d(-1, 0.5, 0))}");
         }
 
-            #endregion TestCommands
+        #endregion TestCommands
 
 
-            [CommandMethod("ESABINIT")]
+        [CommandMethod("ESABINIT")]
         public void EsabInitialise()
         {
             GeometryMethods ge = new GeometryMethods();
             ge.InitialiseGeometry();
+
+            ModelMethods mm = new ModelMethods();
+            mm.InitialiseModels();
         }
 
         [CommandMethod("EsabAssignRouteProps")]
@@ -121,6 +83,8 @@ namespace ElectricalSiteAutoBuild
                 acEd.Regen();
 
                 route.defaultConductorType = (EsabConductorType)ed.GetEnumFromKeywords(typeof(EsabConductorType), "Default Conductor");
+                route.codelist4D_region = ed.GetStr("4d Region Code", "NON");
+                route.codelist4D_area = ed.GetStr("4d Area Code", "NON");
 
 
                 // convert pline to mline
@@ -445,6 +409,54 @@ namespace ElectricalSiteAutoBuild
 
         }
 
+        [CommandMethod("EsabBuildRoute")]
+        public void BuildRoute()
+        {
+            Document acDoc = Application.DocumentManager.MdiActiveDocument;
+            Database acDb = acDoc.Database;
+            Editor acEd = acDoc.Editor;
+
+            ModelMethods mm = new ModelMethods();
+
+            // select the route gemetry
+            //
+            PromptEntityOptions peo = new PromptEntityOptions("\nSelect a route: \n");
+            peo.SetRejectMessage("\nSelection must be Mline entity\n");
+            peo.AddAllowedClass(typeof(Mline), true);
+            PromptEntityResult per = acEd.GetEntity(peo);
+
+            if (per.Status != PromptStatus.OK)
+                return;
+
+            Mline mline;
+            ResultBuffer rb;
+            EsabRoute route = new EsabRoute();
+
+            using (Transaction tr = acDb.TransactionManager.StartTransaction())
+            {
+                mline = (Mline)tr.GetObject(per.ObjectId, OpenMode.ForRead);
+                rb = mline.GetXDictionaryXrecordData(Constants.XappName);
+                var data = rb.AsArray();
+                EsabXdType type = (EsabXdType)Enum.ToObject(typeof(EsabXdType), data[1].Value);
+
+                if (type != EsabXdType.Route)
+                {
+                    acEd.WriteMessage("\nSelection is not an ESAB Route entity\nExiting command\n");
+                    return;
+                }
+
+                route.FromXdictionary(mline);
+
+                tr.Commit();
+            }
+
+            ObjectId returnId = mm.BuildSinglePhaseRoute(route, mline);
+
+        }
+
+
+
+
         [CommandMethod("EsabInspect")] 
         public void EsabInspect()
         {
@@ -452,6 +464,17 @@ namespace ElectricalSiteAutoBuild
             iWindow.Show();
         }
 
+        [CommandMethod("EsabLockModel")]
+        public void LockModel()
+        {
+
+        }
+
+        [CommandMethod("EsabLockDefinition")]
+        public void LockDefinition()
+        {
+
+        }
 
     }
 
