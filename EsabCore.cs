@@ -114,6 +114,7 @@ namespace ElectricalSiteAutoBuild
             xdata[7] = new TypedValue((int)DxfCode.Text, codelist4D_region);
             xdata[8] = new TypedValue((int)DxfCode.Text, codelist4D_area);
 
+
             for (int i = 0; i < featureIds.Count; i++)
             {
                 xdata[i + Constants.XpointerRoute] = new TypedValue((int)DxfCode.SoftPointerId, featureIds[i]);

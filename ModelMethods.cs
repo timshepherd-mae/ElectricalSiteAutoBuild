@@ -349,7 +349,7 @@ namespace ElectricalSiteAutoBuild
 
         #region Model Build Methods
 
-        public Point3d[] InsertModelFeatureSet(string[] FeatureList, Point3d placement, double orientation, EsabRoute route, string zone4d)
+        public Point3d[] InsertModelFeatureSet(string[] PartsList, bool IsThreePhaseItem, Point3d placement, Vector3d pathDirection, EsabRoute route, string zone4d)
         {
             // chain a string of blockrefs from lastAttPnt to ThisInsPnt
             // add all to a new group, return the objId ofthe group
@@ -360,6 +360,8 @@ namespace ElectricalSiteAutoBuild
             string assignPack4d = "NON";
             string assignZone4d; 
 
+            double orientation = AngleFromX(pathDirection);
+
             using (Transaction tr = acDb.TransactionManager.StartTransaction())
             {
 
@@ -369,14 +371,17 @@ namespace ElectricalSiteAutoBuild
                 ObjectIdCollection blockRefIds = new ObjectIdCollection();
                 ObjectId blockRefId = new ObjectId();
 
+                
                 Point3d currentAttPnt = placement;
                 
-
-                for (int i = 0; i < FeatureList.Length; i++)
+// entity build
+                // cycle through the vertical parts list for the feature
+                //
+                for (int i = 0; i < PartsList.Length; i++)
                 {
-                    if (bt.Has(FeatureList[i]))
+                    if (bt.Has(PartsList[i]))
                     {
-                        BlockTableRecord blockDef = (BlockTableRecord)bt[FeatureList[i]].GetObject(OpenMode.ForRead);
+                        BlockTableRecord blockDef = (BlockTableRecord)bt[PartsList[i]].GetObject(OpenMode.ForRead);
 
                         using (BlockReference blockRef = new BlockReference(currentAttPnt, blockDef.ObjectId))
                         {
@@ -439,7 +444,7 @@ namespace ElectricalSiteAutoBuild
                         }
                     }
                 }
-
+// entity build
                 tr.Commit();
 
             }
@@ -482,7 +487,6 @@ namespace ElectricalSiteAutoBuild
             Database acDb = Application.DocumentManager.MdiActiveDocument.Database;
 
             Vector3d pathDirection;
-            Double pathOrientation;
             Point3d currentPoint;
             ObjectId currentFeatureId;
             EsabFeature currentFeature = new EsabFeature();
@@ -513,12 +517,10 @@ namespace ElectricalSiteAutoBuild
                 if (i == 0)
                 {
                     pathDirection = mline.VertexAt(1) - mline.VertexAt(0);
-                    pathOrientation = AngleFromX(pathDirection);
                 }
                 else
                 {
                     pathDirection = mline.VertexAt(i) - mline.VertexAt(i-1);
-                    pathOrientation = AngleFromX(pathDirection);
                 }
 
                 currentPoint = mline.VertexAt(i);
@@ -542,8 +544,7 @@ namespace ElectricalSiteAutoBuild
 
                         if (currentFeature.featureType == EsabFeatureType.PI)
                         {
-                            
-                            EndPointSetCollection.Add(InsertModelFeatureSet(new string[] { "FND", "SUP1B", "PIB" }, currentPoint, pathOrientation, route, "PI"));
+                            EndPointSetCollection.Add(InsertModelFeatureSet(new string[] { "FND", "SUP1B", "PIB" }, false, currentPoint, pathDirection, route, "PI"));
                         }
                     }
 
@@ -592,52 +593,6 @@ namespace ElectricalSiteAutoBuild
                 }
 
             }
-
-        }
-
-        public void Add4dCodeAttributes(BlockTableRecord btr)
-        {
-            AttributeDefinition attdef;
-
-            attdef = new AttributeDefinition();
-            attdef.Verifiable = false;
-            attdef.Visible = false;
-            attdef.LockPositionInBlock = true;
-            attdef.Tag = "4D_Region";
-            attdef.TextString = "NON";
-            attdef.Height = 0.2;
-            attdef.Position = new Point3d(0, 0, 0);
-            btr.AppendEntity(attdef);
-
-            attdef = new AttributeDefinition();
-            attdef.Verifiable = false;
-            attdef.Visible = false;
-            attdef.LockPositionInBlock = true;
-            attdef.Tag = "4D_Area";
-            attdef.TextString = "NON";
-            attdef.Height = 0.2;
-            attdef.Position = new Point3d(0, 0, 0);
-            btr.AppendEntity(attdef);
-
-            attdef = new AttributeDefinition();
-            attdef.Verifiable = false;
-            attdef.Visible = false;
-            attdef.LockPositionInBlock = true;
-            attdef.Tag = "4D_Zone";
-            attdef.TextString = "NON";
-            attdef.Height = 0.2;
-            attdef.Position = new Point3d(0, 0, 0);
-            btr.AppendEntity(attdef);
-
-            attdef = new AttributeDefinition();
-            attdef.Verifiable = false;
-            attdef.Visible = false;
-            attdef.LockPositionInBlock = true;
-            attdef.Tag = "4D_Package";
-            attdef.TextString = "NON";
-            attdef.Height = 0.2;
-            attdef.Position = new Point3d(0, 0, 0);
-            btr.AppendEntity(attdef);
 
         }
 
