@@ -99,6 +99,7 @@ namespace ElectricalSiteAutoBuild
                     {
                         this.lvwItems.Items.Add("Item Type:  " + (EsabFeatureType)Enum.ToObject(typeof(EsabFeatureType), data[4].Value));
                         if (Constants.ShowObjIds) this.lvwItems.Items.Add("Parent Id:  " + data[2].Value);
+                        if (Constants.ShowObjIds) this.lvwItems.Items.Add("This Id:    " + ent.ObjectId.ToString());
                         this.lastSelectionGroup.Add(ent.ObjectId);
                         this.lastSelectionGroup.Add((ObjectId)data[2].Value);
                     }
@@ -107,6 +108,7 @@ namespace ElectricalSiteAutoBuild
                         this.lvwItems.Items.Add("Item Type:  " + (EsabTerminatorType)Enum.ToObject(typeof(EsabTerminatorType), data[4].Value));
                         if (Constants.ShowObjIds) this.lvwItems.Items.Add("RouteA Id:  " + data[2].Value);
                         if (Constants.ShowObjIds) this.lvwItems.Items.Add("RouteB Id:  " + data[3].Value);
+                        if (Constants.ShowObjIds) this.lvwItems.Items.Add("This Id:    " + ent.ObjectId.ToString());
                         this.lastSelectionGroup.Add(ent.ObjectId);
                         this.lastSelectionGroup.Add((ObjectId)data[2].Value);
                         this.lastSelectionGroup.Add((ObjectId)data[3].Value);
@@ -116,6 +118,7 @@ namespace ElectricalSiteAutoBuild
                         this.lvwItems.Items.Add("Item Type:  " + (EsabJunctionType)Enum.ToObject(typeof(EsabJunctionType), data[4].Value));
                         if (Constants.ShowObjIds) this.lvwItems.Items.Add("Main Id:    " + data[2].Value);
                         if (Constants.ShowObjIds) this.lvwItems.Items.Add("Branch Id:  " + data[3].Value);
+                        if (Constants.ShowObjIds) this.lvwItems.Items.Add("This Id:    " + ent.ObjectId.ToString());
                         this.lastSelectionGroup.Add(ent.ObjectId);
                         this.lastSelectionGroup.Add((ObjectId)data[2].Value);
                         this.lastSelectionGroup.Add((ObjectId)data[3].Value);

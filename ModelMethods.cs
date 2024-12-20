@@ -11,6 +11,11 @@ using System.Collections.Specialized;
 
 namespace ElectricalSiteAutoBuild
 {
+
+    // CONVERT STRING TO OBJECTID
+    // new ObjectId(new IntPtr(long.Parse(str)));
+
+
     public class ModelMethods
     {
         #region Model Method Constants
@@ -51,12 +56,12 @@ namespace ElectricalSiteAutoBuild
             AttNamePos[] SUP1B = { new AttNamePos("ATTPNT", 0, 0, ElevationTier1 - LengthEquipB - ElevationTOC) };
             AttNamePos[] SUP2B = { new AttNamePos("ATTPNT", 0, 0, ElevationTier2 - LengthEquipB - ElevationTOC) };
             AttNamePos[] PIB = {
-                new AttNamePos("NODE_0_L", 0, 0, LengthEquipB),
+                //new AttNamePos("NODE_0_L", 0, 0, LengthEquipB),
                 new AttNamePos("NODE_0_M", 0, 0, LengthEquipB),
-                new AttNamePos("NODE_0_R", 0, 0, LengthEquipB),
-                new AttNamePos("NODE_1_L", 0, 0, LengthEquipB),
+                //new AttNamePos("NODE_0_R", 0, 0, LengthEquipB),
+                //new AttNamePos("NODE_1_L", 0, 0, LengthEquipB),
                 new AttNamePos("NODE_1_M", 0, 0, LengthEquipB),
-                new AttNamePos("NODE_1_R", 0, 0, LengthEquipB),
+                //new AttNamePos("NODE_1_R", 0, 0, LengthEquipB),
             };
 
 
@@ -166,6 +171,7 @@ namespace ElectricalSiteAutoBuild
 
                         btr.AppendEntity(Foundation(2, 0.8, ElevationTOC));
 
+                        AddEsabRefAttributes(btr);
                         AddNodeAttributes(btr, FND, true);
 
                         tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
@@ -199,6 +205,7 @@ namespace ElectricalSiteAutoBuild
                         double height = ElevationTier1 - LengthEquipA - ElevationTOC;
                         btr.AppendEntity(Support(SizePlateEquipA, DepthPlate, height, RadiusSupportA, Point2d.Origin));
 
+                        AddEsabRefAttributes(btr);
                         AddNodeAttributes(btr, SUP1A, true);
 
                         tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
@@ -227,6 +234,7 @@ namespace ElectricalSiteAutoBuild
                         double height = ElevationTier1 - LengthEquipB - ElevationTOC;
                         btr.AppendEntity(Support(SizePlateEquipB, DepthPlate, height, RadiusSupportB, Point2d.Origin));
 
+                        AddEsabRefAttributes(btr);
                         AddNodeAttributes(btr, SUP1B, true);
 
                         tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
@@ -255,6 +263,7 @@ namespace ElectricalSiteAutoBuild
                         double height = ElevationTier2 - LengthEquipA - ElevationTOC;
                         btr.AppendEntity(Support(SizePlateEquipA, DepthPlate, height, RadiusSupportA, Point2d.Origin));
 
+                        AddEsabRefAttributes(btr);
                         AddNodeAttributes(btr, SUP2A, true);
 
                         tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
@@ -283,6 +292,7 @@ namespace ElectricalSiteAutoBuild
                         double height = ElevationTier2 - LengthEquipB - ElevationTOC;
                         btr.AppendEntity(Support(SizePlateEquipB, DepthPlate, height, RadiusSupportB, Point2d.Origin));
 
+                        AddEsabRefAttributes(btr);
                         AddNodeAttributes(btr, SUP2B, true);
 
                         tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
@@ -326,6 +336,7 @@ namespace ElectricalSiteAutoBuild
 
                         btr.AppendEntity(frustum);
 
+                        AddEsabRefAttributes(btr);
                         AddNodeAttributes(btr, PIB, true);
 
                         tr.GetObject(acDb.BlockTableId, OpenMode.ForWrite);
@@ -349,7 +360,7 @@ namespace ElectricalSiteAutoBuild
 
         #region Model Build Methods
 
-        public Point3d[] InsertModelFeatureSet(string[] PartsList, bool IsThreePhaseItem, Point3d placement, Vector3d pathDirection, EsabRoute route, string zone4d)
+        public Point3d[] InsertModelFeatureSet(string[] PartsList, bool IsLarge, Point3d placement, Vector3d pathDirection, EsabRoute route, int FeatureIndex, string zone4d)
         {
             // chain a string of blockrefs from lastAttPnt to ThisInsPnt
             // add all to a new group, return the objId ofthe group
@@ -371,78 +382,114 @@ namespace ElectricalSiteAutoBuild
                 ObjectIdCollection blockRefIds = new ObjectIdCollection();
                 ObjectId blockRefId = new ObjectId();
 
-                
-                Point3d currentAttPnt = placement;
-                
-// entity build
-                // cycle through the vertical parts list for the feature
-                //
-                for (int i = 0; i < PartsList.Length; i++)
+                List<PosNodelabel> PosNodelabelGroup;
+                if (route.phase == EsabPhaseType.ThreePhase)
                 {
-                    if (bt.Has(PartsList[i]))
+                    Vector3d perpUnit = pathDirection.RotateBy(Math.PI / 2, Vector3d.ZAxis) / pathDirection.Length;
+                    Point3d placementLeft = placement + (perpUnit * route.phasesep);
+                    Point3d placementRight = placement - (perpUnit * route.phasesep);
+
+                    PosNodelabelGroup = new List<PosNodelabel>
                     {
-                        BlockTableRecord blockDef = (BlockTableRecord)bt[PartsList[i]].GetObject(OpenMode.ForRead);
+                        new PosNodelabel(placementLeft, "L"),
+                        new PosNodelabel(placement, "M"),
+                        new PosNodelabel(placementRight, "R")
+                    };
 
-                        using (BlockReference blockRef = new BlockReference(currentAttPnt, blockDef.ObjectId))
+                }
+                else
+                {
+                    PosNodelabelGroup = new List<PosNodelabel>
+                    {
+                        new PosNodelabel(placement, "M"),
+                    };
+
+                }
+
+                //PosNodes localPlacement = new PosNodes(placement, "M");
+
+                foreach (PosNodelabel localPosNodelabel in PosNodelabelGroup)
+                {
+
+                    Point3d currentAttPnt = localPosNodelabel.Position;
+
+                    // entity build
+                    // cycle through the vertical parts list for the feature
+                    //
+                    for (int i = 0; i < PartsList.Length; i++)
+                    {
+                        if (bt.Has(PartsList[i]))
                         {
+                            BlockTableRecord blockDef = (BlockTableRecord)bt[PartsList[i]].GetObject(OpenMode.ForRead);
 
-                            switch (i) // assign layer
+                            using (BlockReference blockRef = new BlockReference(currentAttPnt, blockDef.ObjectId))
                             {
-                                case 0:
-                                    blockRef.Layer = "_Esab_Model_Foundations";
-                                    assignPack4d = "FND";
-                                    assignZone4d = zone4d;
-                                    break;
-                                case 1:
-                                    blockRef.Layer = "_Esab_Model_Supports";
-                                    assignPack4d = "SUP";
-                                    assignZone4d = (Constants.SupportsByArea) ? "SUP" : zone4d;
-                                    break;
-                                case 2:
-                                    blockRef.Layer = "_Esab_Model_Equipment";
-                                    assignPack4d = "EQU";
-                                    assignZone4d = zone4d;
-                                    break;
-                                default:
-                                    blockRef.Layer = "_Esab_Model_General";
-                                    assignPack4d = "NON";
-                                    assignZone4d = zone4d;
-                                    break;
+
+                                switch (i) // assign layer
+                                {
+                                    case 0:
+                                        blockRef.Layer = "_Esab_Model_Foundations";
+                                        assignPack4d = "FND";
+                                        assignZone4d = zone4d;
+                                        break;
+                                    case 1:
+                                        blockRef.Layer = "_Esab_Model_Supports";
+                                        assignPack4d = "SUP";
+                                        assignZone4d = (Constants.SupportsByArea) ? "SUP" : zone4d;
+                                        break;
+                                    case 2:
+                                        blockRef.Layer = "_Esab_Model_Equipment";
+                                        assignPack4d = "EQU";
+                                        assignZone4d = zone4d;
+                                        break;
+                                    default:
+                                        blockRef.Layer = "_Esab_Model_General";
+                                        assignPack4d = "NON";
+                                        assignZone4d = zone4d;
+                                        break;
+                                }
+
+                                blockRef.Rotation = orientation;
+                                blockRefId = modelspace.AppendEntity(blockRef);
+                                tr.AddNewlyCreatedDBObject(blockRef, true);
+
+                                // transfer attribute definitions into new block
+                                //
+                                AttDefTransfer(tr, blockDef, blockRef);
+
+                                obj = blockRef as DBObject;
+
+                                ApplyCODESET4D(acDb, tr, obj);
+                                UpdateCODESET4D(acDb, tr, obj, route.codelist4D_region, route.codelist4D_area, assignZone4d, assignPack4d);
+
+                                // get the new atribute references
+                                // and get 3d location of ATTPNT
+                                //
+                                AttributeCollection attcol = blockRef.AttributeCollection;
+                                foreach (ObjectId attId in attcol)
+                                {
+                                    AttributeReference attref = (AttributeReference)tr.GetObject(attId, OpenMode.ForRead);
+                                    if (attref.Tag == "ATTPNT") currentAttPnt = attref.Position;
+                                    if (attref.Tag == "NODE_0_L") EndPointSet[0] = attref.Position;
+                                    if (attref.Tag == "NODE_0_M") EndPointSet[1] = attref.Position;
+                                    if (attref.Tag == "NODE_0_R") EndPointSet[2] = attref.Position;
+                                    if (attref.Tag == "NODE_1_L") EndPointSet[3] = attref.Position;
+                                    if (attref.Tag == "NODE_1_M") EndPointSet[4] = attref.Position;
+                                    if (attref.Tag == "NODE_1_R") EndPointSet[5] = attref.Position;
+
+                                    if (attref.Tag == "ESABREF")
+                                    {
+                                        attref.UpgradeOpen();
+                                        attref.TextString = route.featureIds[FeatureIndex].ToString();
+                                    }
+                                }
+
+                                blockRefIds.Add(blockRefId);
+
                             }
-
-                            blockRef.Rotation = orientation;
-                            blockRefId = modelspace.AppendEntity(blockRef);
-                            tr.AddNewlyCreatedDBObject(blockRef, true);
-
-                            // transfer attribute definitions into new block
-                            //
-                            AttDefTransfer(tr, blockDef, blockRef);
-
-                            obj = blockRef as DBObject;
-
-                            ApplyCODESET4D(acDb, tr, obj);
-                            UpdateCODESET4D(acDb, tr, obj, route.codelist4D_region, route.codelist4D_area, assignZone4d, assignPack4d);
-
-                            // get the new atribute references
-                            // and get 3d location of ATTPNT
-                            //
-                            AttributeCollection attcol = blockRef.AttributeCollection;
-                            foreach (ObjectId attId in attcol)
-                            {
-                                AttributeReference attref = (AttributeReference)tr.GetObject(attId, OpenMode.ForRead);
-                                if (attref.Tag == "ATTPNT") currentAttPnt = attref.Position;
-                                if (attref.Tag == "NODE_0_L") EndPointSet[0] = attref.Position;
-                                if (attref.Tag == "NODE_0_M") EndPointSet[1] = attref.Position;
-                                if (attref.Tag == "NODE_0_R") EndPointSet[2] = attref.Position;
-                                if (attref.Tag == "NODE_1_L") EndPointSet[3] = attref.Position;
-                                if (attref.Tag == "NODE_1_M") EndPointSet[4] = attref.Position;
-                                if (attref.Tag == "NODE_1_R") EndPointSet[5] = attref.Position;
-                            }
-
-                            blockRefIds.Add(blockRefId);
-
                         }
                     }
+
                 }
 // entity build
                 tr.Commit();
@@ -544,7 +591,7 @@ namespace ElectricalSiteAutoBuild
 
                         if (currentFeature.featureType == EsabFeatureType.PI)
                         {
-                            EndPointSetCollection.Add(InsertModelFeatureSet(new string[] { "FND", "SUP1B", "PIB" }, false, currentPoint, pathDirection, route, "PI"));
+                            EndPointSetCollection.Add(InsertModelFeatureSet(new string[] { "FND", "SUP1B", "PIB" }, false, currentPoint, pathDirection, route, i, "PI"));
                         }
                     }
 
@@ -552,12 +599,12 @@ namespace ElectricalSiteAutoBuild
 
                 }
             }
-            
+/*            
             for (int i = 1; i < EndPointSetCollection.Count; i++)
             {
                 InsertConductor(EndPointSetCollection[i - 1][4], EndPointSetCollection[i][1], phasecolours[Enum.GetName(typeof(EsabPhaseColour), route.phasecol)], route);
             }
-            
+*/            
             return ObjectId.Null;
         }
 
@@ -576,24 +623,37 @@ namespace ElectricalSiteAutoBuild
 
             foreach (AttNamePos anp in anps)
             {
-            attdef = new AttributeDefinition();
-            attdef.Verifiable = false;
-            attdef.Visible = false;
-            attdef.LockPositionInBlock = true;
-            attdef.Tag = anp.AttName;
-            attdef.TextString = "0";
-            attdef.Height = 0.2;
-            attdef.Position = anp.AttPos;
-            btr.AppendEntity(attdef);
+                attdef = new AttributeDefinition();
+                attdef.Verifiable = false;
+                attdef.Visible = false;
+                attdef.LockPositionInBlock = true;
+                attdef.Tag = anp.AttName;
+                attdef.TextString = "0";
+                attdef.Height = 0.2;
+                attdef.Position = anp.AttPos;
+                btr.AppendEntity(attdef);
 
-            if (IncludePointGeometry)
-                {
-                    pnt = new DBPoint(anp.AttPos);
-                    btr.AppendEntity(pnt);
-                }
+                if (IncludePointGeometry)
+                    {
+                        pnt = new DBPoint(anp.AttPos);
+                        btr.AppendEntity(pnt);
+                    }
 
             }
 
+        }
+
+        public void AddEsabRefAttributes(BlockTableRecord btr)
+        {
+            AttributeDefinition attdef = new AttributeDefinition();
+            attdef.Verifiable = false;
+            attdef.Visible = false;
+            attdef.LockPositionInBlock = true;
+            attdef.Tag = "ESABREF";
+            attdef.TextString = "0";
+            attdef.Height = 0.2;
+            attdef.Position = Point3d.Origin;
+            btr.AppendEntity(attdef);
         }
 
         public void AttDefTransfer(Transaction tr, BlockTableRecord blockDef, BlockReference blockRef)
@@ -896,6 +956,22 @@ namespace ElectricalSiteAutoBuild
             {
                 this.AttName = name;
                 this.AttPos = new Point3d(x, y, z);
+            }
+
+        }
+
+        public struct PosNodelabel
+        {
+            // container for placement position of featuresets
+            // and a Left/Mid/Right label for phaseline definition
+            //
+            public Point3d Position;
+            public string LinesUsed;
+
+            public PosNodelabel(Point3d p, string s)
+            {
+                Position = p;
+                LinesUsed = s;
             }
 
         }
