@@ -49,6 +49,8 @@ namespace ElectricalSiteAutoBuild
 
 
             // create AttNamePos groups
+            // an attnamepos stores an 'empty' attribute in the block definition that is used for
+            // locating attachment and conductor node 3d positions
             //
             AttNamePos[] FND = { new AttNamePos("ATTPNT", 0, 0, ElevationTOC) };
             AttNamePos[] SUP1A = { new AttNamePos("ATTPNT", 0, 0, ElevationTier1 - LengthEquipA - ElevationTOC) };
@@ -56,12 +58,12 @@ namespace ElectricalSiteAutoBuild
             AttNamePos[] SUP1B = { new AttNamePos("ATTPNT", 0, 0, ElevationTier1 - LengthEquipB - ElevationTOC) };
             AttNamePos[] SUP2B = { new AttNamePos("ATTPNT", 0, 0, ElevationTier2 - LengthEquipB - ElevationTOC) };
             AttNamePos[] PIB = {
-                //new AttNamePos("NODE_0_L", 0, 0, LengthEquipB),
+                new AttNamePos("NODE_0_L", 0, 0, LengthEquipB),
                 new AttNamePos("NODE_0_M", 0, 0, LengthEquipB),
-                //new AttNamePos("NODE_0_R", 0, 0, LengthEquipB),
-                //new AttNamePos("NODE_1_L", 0, 0, LengthEquipB),
+                new AttNamePos("NODE_0_R", 0, 0, LengthEquipB),
+                new AttNamePos("NODE_1_L", 0, 0, LengthEquipB),
                 new AttNamePos("NODE_1_M", 0, 0, LengthEquipB),
-                //new AttNamePos("NODE_1_R", 0, 0, LengthEquipB),
+                new AttNamePos("NODE_1_R", 0, 0, LengthEquipB),
             };
 
 
@@ -470,12 +472,22 @@ namespace ElectricalSiteAutoBuild
                                 {
                                     AttributeReference attref = (AttributeReference)tr.GetObject(attId, OpenMode.ForRead);
                                     if (attref.Tag == "ATTPNT") currentAttPnt = attref.Position;
-                                    if (attref.Tag == "NODE_0_L") EndPointSet[0] = attref.Position;
-                                    if (attref.Tag == "NODE_0_M") EndPointSet[1] = attref.Position;
-                                    if (attref.Tag == "NODE_0_R") EndPointSet[2] = attref.Position;
-                                    if (attref.Tag == "NODE_1_L") EndPointSet[3] = attref.Position;
-                                    if (attref.Tag == "NODE_1_M") EndPointSet[4] = attref.Position;
-                                    if (attref.Tag == "NODE_1_R") EndPointSet[5] = attref.Position;
+                                    
+                                    if(localPosNodelabel.LinesUsed == "L")
+                                    {
+                                        if (attref.Tag == "NODE_0_L") EndPointSet[0] = attref.Position;
+                                        if (attref.Tag == "NODE_1_L") EndPointSet[3] = attref.Position;
+                                    }
+                                    if (localPosNodelabel.LinesUsed == "M")
+                                    {
+                                        if (attref.Tag == "NODE_0_M") EndPointSet[1] = attref.Position;
+                                        if (attref.Tag == "NODE_1_M") EndPointSet[4] = attref.Position;
+                                    }
+                                    if (localPosNodelabel.LinesUsed == "R")
+                                    {
+                                        if (attref.Tag == "NODE_0_R") EndPointSet[2] = attref.Position;
+                                        if (attref.Tag == "NODE_1_R") EndPointSet[5] = attref.Position;
+                                    }
 
                                     if (attref.Tag == "ESABREF")
                                     {
@@ -593,18 +605,31 @@ namespace ElectricalSiteAutoBuild
                         {
                             EndPointSetCollection.Add(InsertModelFeatureSet(new string[] { "FND", "SUP1B", "PIB" }, false, currentPoint, pathDirection, route, i, "PI"));
                         }
+                        if (currentFeature.featureType == EsabFeatureType.RI)
+                        {
+                            EndPointSetCollection.Add(InsertModelFeatureSet(new string[] { "FND", "SUP2B", "PIB" }, false, currentPoint, pathDirection, route, i, "RI"));
+                        }
                     }
 
                     tr.Commit();
 
                 }
             }
-/*            
+            
             for (int i = 1; i < EndPointSetCollection.Count; i++)
             {
-                InsertConductor(EndPointSetCollection[i - 1][4], EndPointSetCollection[i][1], phasecolours[Enum.GetName(typeof(EsabPhaseColour), route.phasecol)], route);
+                if (route.phase == EsabPhaseType.ThreePhase)
+                {
+                    InsertConductor(EndPointSetCollection[i - 1][3], EndPointSetCollection[i][0], phasecolours[Enum.GetName(typeof(EsabPhaseColour), route.phasecol)[0].ToString()], route);
+                    InsertConductor(EndPointSetCollection[i - 1][4], EndPointSetCollection[i][1], phasecolours[Enum.GetName(typeof(EsabPhaseColour), route.phasecol)[1].ToString()], route);
+                    InsertConductor(EndPointSetCollection[i - 1][5], EndPointSetCollection[i][2], phasecolours[Enum.GetName(typeof(EsabPhaseColour), route.phasecol)[2].ToString()], route);
+                }
+                else
+                {
+                    InsertConductor(EndPointSetCollection[i - 1][4], EndPointSetCollection[i][1], phasecolours[Enum.GetName(typeof(EsabPhaseColour), route.phasecol)], route);
+                }
             }
-*/            
+            
             return ObjectId.Null;
         }
 
